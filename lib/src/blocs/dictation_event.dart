@@ -19,3 +19,13 @@ class UpdateTranscript extends DictationEvent {
   @override
   List<Object?> get props => [transcript];
 }
+
+class DictationErrorOccurred extends DictationEvent {
+  final String errorMessage;
+
+  const DictationErrorOccurred(this.errorMessage);
+
+  @override
+  List<Object?> get props => [errorMessage];
+}
+

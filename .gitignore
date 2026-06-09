@@ -17,3 +17,9 @@ ios/Pods/
 **/GeneratedPluginRegistrant.*
 .env
 .env.*
+
+# Temporary / Scratch Files
+*.ps1
+*.ipynb
+*.log
+

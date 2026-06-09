@@ -1,8 +1,17 @@
 # Workspace Copilot Instructions
 
-- Scaffold and enhance the OmniScribe AI Flutter workspace for cross-platform mobile and desktop.
-- Keep the application architecture focused on:
-  - Multilingual STT (Indian English, Hindi, Marathi)
-  - Domain-aware AI Brain for legal, academic, and spiritual workflows
-  - Dual-pane desktop interface and split-screen mobile layout
-- Use Bloc for state management and keep the code scaffolded for future API integration.
+- Keep changes minimal, targeted, and compatible with Flutter idioms.
+- Focus on the core app scaffolding:
+  - lightweight STT integration patterns
+  - domain-aware AI Brain for legal, academic, and spiritual use cases
+  - desktop/mobile responsive UI structure
+- Avoid adding large dependencies, generated code, or broad refactors.
+- Validate changes with `flutter analyze` and `dart format .`.
+- Prefer clear, concise edits that reduce scanning overhead and token usage.
+- When updating docs, keep content short and actionable.
+
+## Git Workflow Instructions
+- Always run `git pull` at the start of a session or task to ensure the workspace is up-to-date with remote changes.
+- Commit code changes incrementally with clear, descriptive commit messages.
+- Always push commits to the remote repository (`origin`) at the end of every session or task to keep remote and local synchronized.
+

@@ -3,13 +3,13 @@ description: OmniScribe AI - cross-platform domain-aware dictation and voice ass
 publish_to: 'none'
 version: 0.1.0+1
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  sdk: '>=3.1.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^8.1.0
-  equatable: ^2.1.0
+  equatable: ^2.0.8
   http: ^1.1.0
   flutter_dotenv: ^5.0.2
   url_launcher: ^6.1.10

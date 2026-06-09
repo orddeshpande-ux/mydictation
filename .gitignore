@@ -1,0 +1,19 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache
+.pub/
+build/
+ios/Pods/
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-versions
+.idea/
+.vscode/
+*.iml
+
+# Generated files
+.DS_Store
+**/GeneratedPluginRegistrant.*
+.env
+.env.*

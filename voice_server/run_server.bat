@@ -11,7 +11,7 @@ if %errorlevel% equ 0 (
     echo [INFO] Found uv package manager.
     if not exist ".venv" (
         echo [INFO] Creating local virtual environment for Python 3.10...
-        uv venv --python 3.10
+        uv venv .venv --python 3.10
     )
     echo [INFO] Installing/updating dependencies...
     uv pip install -r requirements.txt

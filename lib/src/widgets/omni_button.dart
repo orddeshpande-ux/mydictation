@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class OmniButton extends StatelessWidget {
   final String label;
@@ -22,6 +23,13 @@ class OmniButton extends StatelessWidget {
     final buttonStyle = isSecondary
         ? theme.outlinedButtonTheme.style
         : theme.elevatedButtonTheme.style;
+
+    final VoidCallback? handlePress = (onPressed == null || isLoading)
+        ? null
+        : () {
+            HapticFeedback.lightImpact();
+            onPressed!();
+          };
 
     Widget buttonChild = Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -49,14 +57,14 @@ class OmniButton extends StatelessWidget {
 
     if (isSecondary) {
       return OutlinedButton(
-        onPressed: isLoading ? null : onPressed,
+        onPressed: handlePress,
         style: buttonStyle,
         child: buttonChild,
       );
     }
 
     return ElevatedButton(
-      onPressed: isLoading ? null : onPressed,
+      onPressed: handlePress,
       style: buttonStyle,
       child: buttonChild,
     );

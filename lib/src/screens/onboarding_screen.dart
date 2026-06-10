@@ -19,7 +19,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: 'Welcome to OmniScribe AI',
       description: 'Your intelligent assistant for multilingual dictation, automated grammar cleanup, and voice cloning.',
       icon: Icons.mic_rounded,
-      color: const Color(0xFF6C63FF),
+      color: const Color(0xFF0F766E),
     ),
     OnboardingPageData(
       title: 'Speak in Your Language',
@@ -31,7 +31,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: 'Domain-Aware AI Cleanup',
       description: 'Get tailored formatting and insights for Legal drafting, Academic proofreading, or Spiritual transcripts.',
       icon: Icons.psychology_rounded,
-      color: const Color(0xFF4F46E5),
+      color: const Color(0xFF0284C7),
     ),
     OnboardingPageData(
       title: 'Voice Cloning & TTS',

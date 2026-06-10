@@ -553,7 +553,12 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Tooltip(
         message: tooltip,
         child: GestureDetector(
-          onTap: onTap,
+          onTap: onTap == null
+              ? null
+              : () {
+                  HapticFeedback.lightImpact();
+                  onTap();
+                },
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

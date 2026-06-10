@@ -22,6 +22,82 @@ class VoiceCloneService {
     } catch (_) {
       _baseUrl = _defaultUrl;
     }
+
+    // On mobile platforms (Android/iOS), if the loaded URL is not running, trigger auto-discovery
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      final service = VoiceCloneService();
+      final isRunning = await service.isServerRunning();
+      if (!isRunning) {
+        print('VoiceCloneService: Current server URL is offline. Running auto-discovery on local network...');
+        final discoveredUrl = await discoverLocalServer();
+        if (discoveredUrl != null) {
+          print('VoiceCloneService: Auto-detected server at $discoveredUrl');
+          await saveBaseUrl(discoveredUrl);
+        }
+      }
+    }
+  }
+
+  /// Automatically discover the local voice server running on port 5050 in the same network.
+  static Future<String?> discoverLocalServer() async {
+    try {
+      final List<String> subnets = [];
+      for (var interface in await NetworkInterface.list()) {
+        for (var addr in interface.addresses) {
+          if (addr.type == InternetAddressType.IPv4 && !addr.isLoopback) {
+            final ipParts = addr.address.split('.');
+            if (ipParts.length == 4) {
+              final subnet = '${ipParts[0]}.${ipParts[1]}.${ipParts[2]}';
+              if (!subnets.contains(subnet)) {
+                subnets.add(subnet);
+              }
+            }
+          }
+        }
+      }
+
+      if (subnets.isEmpty) return null;
+
+      final client = http.Client();
+      final List<String> scanUrls = [];
+      for (var subnet in subnets) {
+        for (int i = 1; i <= 254; i++) {
+          scanUrls.add('http://$subnet.$i:5050');
+        }
+      }
+
+      // Scan in batches of 32 to prevent OS socket limits/exhaustion
+      const batchSize = 32;
+      for (int i = 0; i < scanUrls.length; i += batchSize) {
+        final end = i + batchSize > scanUrls.length ? scanUrls.length : i + batchSize;
+        final batch = scanUrls.sublist(i, end);
+        final results = await Future.wait(batch.map((url) => _checkServerUrl(client, url)));
+        for (var res in results) {
+          if (res != null) {
+            client.close();
+            return res;
+          }
+        }
+      }
+      client.close();
+    } catch (e) {
+      print('VoiceCloneService: Local network discovery error: $e');
+    }
+    return null;
+  }
+
+  static Future<String?> _checkServerUrl(http.Client client, String url) async {
+    try {
+      final response = await client.get(Uri.parse('$url/health'))
+          .timeout(const Duration(milliseconds: 300));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'ok') {
+          return url;
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   /// Update and save the voice server URL.

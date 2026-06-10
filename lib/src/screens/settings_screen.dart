@@ -230,12 +230,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.lightbulb_rounded,
+                        Icon(Icons.wifi_rounded,
                             color: Colors.amber.shade700, size: 18),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'On your computer, open a terminal and type "ipconfig" to find your IP address. Use http://YOUR_IP:5050',
+                            'Make sure both your laptop and phone are connected to the same Wi-Fi network. Tap "Auto-Detect" below to automatically scan and find the server.',
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               color: const Color(0xFF92400E),
@@ -248,14 +248,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  SizedBox(
-                    width: double.infinity,
-                    child: OmniButton(
-                      label: 'Save & Test Connection',
-                      onPressed: _saveAndTest,
-                      icon: Icons.wifi_find_rounded,
-                      isLoading: _isChecking,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OmniButton(
+                          label: 'Auto-Detect',
+                          onPressed: () async {
+                            setState(() => _isChecking = true);
+                            final discoveredUrl = await VoiceCloneService.discoverLocalServer();
+                            if (discoveredUrl != null) {
+                              await VoiceCloneService.saveBaseUrl(discoveredUrl);
+                              _urlController.text = discoveredUrl;
+                              await _testConnection();
+                            } else {
+                              setState(() => _isChecking = false);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Could not find AI server. Please check your Wi-Fi network and try again.'),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: Icons.search_rounded,
+                          isLoading: _isChecking,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _saveAndTest,
+                          icon: const Icon(Icons.wifi_find_rounded, size: 18),
+                          label: const Text('Save & Test'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

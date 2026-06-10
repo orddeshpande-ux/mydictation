@@ -5,6 +5,13 @@ echo   OmniScribe Voice Server (Coqui XTTS v2)
 echo ============================================================
 echo.
 
+echo [INFO] Stopping any running server instances on port 5050...
+for /f "tokens=5" %%i in ('netstat -aon ^| findstr :5050') do (
+    taskkill /F /PID %%i >nul 2>nul
+    echo [INFO] Killed existing instance (PID: %%i).
+)
+echo.
+
 REM Check if uv is installed
 where uv >nul 2>nul
 if %errorlevel% equ 0 (

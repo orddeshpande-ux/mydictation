@@ -460,28 +460,33 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // Center mic button
-          Tooltip(
-            message: isListening ? 'Tap to stop recording' : 'Tap to start recording your voice',
-            child: AnimatedMicButton(
-              isListening: isListening,
-              isProcessing: isProcessing,
-              size: 60,
-              onTap: () async {
-                if (isListening) {
-                  context.read<DictationBloc>().add(StopDictation());
-                  context.read<DictationBloc>().add(CleanTranscription());
-                  context
-                      .read<DictationBloc>()
-                      .add(GenerateInsights(_selectedMode));
-                } else {
-                  final hasPerms = await _checkPermissions();
-                  if (hasPerms && mounted) {
+          Semantics(
+            label: isListening ? 'Stop recording voice' : 'Start recording voice',
+            hint: isListening ? 'Double tap to stop recording and run AI insights' : 'Double tap to record your voice input',
+            button: true,
+            child: Tooltip(
+              message: isListening ? 'Tap to stop recording' : 'Tap to start recording your voice',
+              child: AnimatedMicButton(
+                isListening: isListening,
+                isProcessing: isProcessing,
+                size: 60,
+                onTap: () async {
+                  if (isListening) {
+                    context.read<DictationBloc>().add(StopDictation());
+                    context.read<DictationBloc>().add(CleanTranscription());
                     context
                         .read<DictationBloc>()
-                        .add(StartDictation(localeId: _selectedLocale));
+                        .add(GenerateInsights(_selectedMode));
+                  } else {
+                    final hasPerms = await _checkPermissions();
+                    if (hasPerms && mounted) {
+                      context
+                          .read<DictationBloc>()
+                          .add(StartDictation(localeId: _selectedLocale));
+                    }
                   }
-                }
-              },
+                },
+              ),
             ),
           ),
 
@@ -540,43 +545,49 @@ class _HomeScreenState extends State<HomeScreen> {
     required String tooltip,
     VoidCallback? onTap,
   }) {
-    return Tooltip(
-      message: tooltip,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: onTap == null
-                    ? const Color(0xFFF1F5F9)
-                    : const Color(0xFFF8F9FC),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: Colors.grey.shade200,
+    return Semantics(
+      label: '$label action',
+      hint: tooltip,
+      button: true,
+      enabled: onTap != null,
+      child: Tooltip(
+        message: tooltip,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: onTap == null
+                      ? const Color(0xFFF1F5F9)
+                      : const Color(0xFFF8F9FC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.grey.shade200,
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: onTap == null
+                      ? const Color(0xFFCBD5E1)
+                      : Theme.of(context).colorScheme.primary,
                 ),
               ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: onTap == null
-                    ? const Color(0xFFCBD5E1)
-                    : Theme.of(context).colorScheme.primary,
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF94A3B8),
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF94A3B8),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

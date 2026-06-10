@@ -84,8 +84,11 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6C63FF), Color(0xFF8B5CF6)],
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.secondary,
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -203,8 +206,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.auto_fix_high_rounded,
-                            color: Color(0xFF6C63FF), size: 20),
+                        Icon(Icons.auto_fix_high_rounded,
+                            color: Theme.of(context).colorScheme.primary, size: 20),
                         const SizedBox(width: 8),
                         Text(
                           'AI Insights',
@@ -260,8 +263,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Color(0xFFFECACA).withOpacity(0.3)
                 ]
               : [
-                  const Color(0xFF6C63FF).withOpacity(0.1),
-                  const Color(0xFFC4B5FD).withOpacity(0.3)
+                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.3)
                 ],
         ),
       ),
@@ -275,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
               strokeWidth: 2,
               color: isListening
                   ? const Color(0xFFEF4444)
-                  : const Color(0xFF6C63FF),
+                  : Theme.of(context).colorScheme.primary,
             ),
           ),
           const SizedBox(width: 8),
@@ -286,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
               fontWeight: FontWeight.w600,
               color: isListening
                   ? const Color(0xFFEF4444)
-                  : const Color(0xFF6C63FF),
+                  : Theme.of(context).colorScheme.primary,
             ),
           ),
         ],
@@ -561,7 +564,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 size: 20,
                 color: onTap == null
                     ? const Color(0xFFCBD5E1)
-                    : const Color(0xFF6C63FF),
+                    : Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(height: 4),
@@ -664,7 +667,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6C63FF),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -711,7 +714,7 @@ class _HomeScreenState extends State<HomeScreen> {
               openAppSettings();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6C63FF),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -918,11 +921,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF1E293B))),
                 if (state.status == DictationStatus.processing)
-                  const SizedBox(
+                  SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Color(0xFF6C63FF)),
+                        strokeWidth: 2, color: Theme.of(context).colorScheme.primary),
                   ),
               ],
             ),

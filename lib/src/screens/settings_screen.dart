@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:omniscribe_ai/src/services/voice_clone_service.dart';
 import 'package:omniscribe_ai/src/widgets/glass_card.dart';
+import 'package:omniscribe_ai/src/widgets/omni_button.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -215,10 +216,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _isChecking ? null : _saveAndTest,
-                      icon: const Icon(Icons.wifi_find_rounded, size: 18),
-                      label: const Text('Save & Test Connection'),
+                    child: OmniButton(
+                      label: 'Save & Test Connection',
+                      onPressed: _saveAndTest,
+                      icon: Icons.wifi_find_rounded,
+                      isLoading: _isChecking,
                     ),
                   ),
                 ],

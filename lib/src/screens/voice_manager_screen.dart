@@ -6,6 +6,7 @@ import 'package:omniscribe_ai/src/services/voice_clone_service.dart';
 import 'package:omniscribe_ai/src/screens/training_guide_screen.dart';
 import 'package:omniscribe_ai/src/widgets/glass_card.dart';
 import 'package:omniscribe_ai/src/widgets/connection_status_widget.dart';
+import 'package:omniscribe_ai/src/widgets/omni_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class VoiceManagerScreen extends StatefulWidget {
@@ -609,13 +610,11 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
           if (!kIsWeb)
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
+              child: OmniButton(
                 onPressed: _startLocalServer,
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('Launch AI Engine'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
+                icon: Icons.play_arrow_rounded,
+                label: 'Launch AI Engine',
+                isLoading: _isStartingServer,
               ),
             ),
           const SizedBox(height: 12),

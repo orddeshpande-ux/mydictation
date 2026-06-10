@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:omniscribe_ai/app.dart';
 import 'package:omniscribe_ai/src/blocs/dictation_bloc.dart';
 import 'package:omniscribe_ai/src/services/voice_clone_service.dart';
+import 'package:omniscribe_ai/src/services/secure_storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,20 +22,47 @@ void main() async {
     print('Error loading SharedPreferences: $e');
   }
   
+  final secureStorage = SecureStorageService();
+  String supabaseUrl = '';
+  String supabaseKey = '';
+
   try {
-    await dotenv.load(fileName: ".env");
-    
-    final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
-    final supabaseKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
-    
-    if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty) {
+    final creds = await secureStorage.getSupabaseCredentials();
+    supabaseUrl = creds['url'] ?? '';
+    supabaseKey = creds['key'] ?? '';
+  } catch (e) {
+    print('SecureStorage: Error loading credentials: $e');
+  }
+
+  // Fallback to .env if secure storage is empty
+  if (supabaseUrl.isEmpty || supabaseKey.isEmpty) {
+    try {
+      await dotenv.load(fileName: ".env");
+      supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+      supabaseKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+      
+      // If we found valid keys in .env, cache them in secure storage
+      if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty) {
+        await secureStorage.saveSupabaseCredentials(supabaseUrl, supabaseKey);
+        print('SecureStorage: Cached .env credentials in secure storage.');
+      }
+    } catch (e) {
+      print('dotenv: Failed to load .env file: $e');
+    }
+  }
+
+  if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty) {
+    try {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
       );
+      print('Supabase: Initialized successfully.');
+    } catch (e) {
+      print('Supabase: Initialization failed: $e');
     }
-  } catch (e) {
-    print('Error initializing environment or Supabase: $e');
+  } else {
+    print('WARNING: Supabase URL or Anon Key is missing. Cloud sync features will be disabled. Connect a database via Settings or specify variables in .env.');
   }
 
   runApp(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:omniscribe_ai/src/services/voice_clone_service.dart';
+import 'package:omniscribe_ai/src/services/secure_storage_service.dart';
 import 'package:omniscribe_ai/src/widgets/glass_card.dart';
 import 'package:omniscribe_ai/src/widgets/omni_button.dart';
 
@@ -13,8 +14,13 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _urlController = TextEditingController();
+  final TextEditingController _supabaseUrlController = TextEditingController();
+  final TextEditingController _supabaseKeyController = TextEditingController();
+  final SecureStorageService _secureStorage = SecureStorageService();
+  
   bool _isChecking = false;
   bool? _isConnected;
+  bool _isSavingDb = false;
 
   @override
   void initState() {
@@ -25,6 +31,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _urlController.dispose();
+    _supabaseUrlController.dispose();
+    _supabaseKeyController.dispose();
     super.dispose();
   }
 
@@ -32,6 +40,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await VoiceCloneService.loadBaseUrl();
     _urlController.text = VoiceCloneService.baseUrl;
     _testConnection();
+
+    try {
+      final creds = await _secureStorage.getSupabaseCredentials();
+      _supabaseUrlController.text = creds['url'] ?? '';
+      _supabaseKeyController.text = creds['key'] ?? '';
+    } catch (_) {}
   }
 
   Future<void> _testConnection() async {
@@ -59,6 +73,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
           content: Text(_isConnected == true
               ? 'Connected to AI server!'
               : 'Could not connect to $url'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _saveDbSettings() async {
+    setState(() => _isSavingDb = true);
+    final url = _supabaseUrlController.text.trim();
+    final key = _supabaseKeyController.text.trim();
+    
+    await _secureStorage.saveSupabaseCredentials(url, key);
+    setState(() => _isSavingDb = false);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Database settings saved! Restart the app to apply changes.'),
         ),
       );
     }
@@ -224,6 +255,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onPressed: _saveAndTest,
                       icon: Icons.wifi_find_rounded,
                       isLoading: _isChecking,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Database Connection
+            GlassCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.cloud_queue_rounded,
+                            color: Theme.of(context).colorScheme.primary, size: 22),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Cloud Database Connection',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1E293B),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Configure Supabase to back up voice profiles and documents',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: const Color(0xFF94A3B8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  TextField(
+                    controller: _supabaseUrlController,
+                    decoration: const InputDecoration(
+                      labelText: 'Supabase URL',
+                      hintText: 'https://xxxxxx.supabase.co',
+                      prefixIcon: Icon(Icons.cloud_circle_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  TextField(
+                    controller: _supabaseKeyController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Supabase Anon Key',
+                      hintText: 'Enter anon public key...',
+                      prefixIcon: Icon(Icons.vpn_key_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: OmniButton(
+                      label: 'Save Database Settings',
+                      onPressed: _saveDbSettings,
+                      icon: Icons.save_rounded,
+                      isLoading: _isSavingDb,
                     ),
                   ),
                 ],

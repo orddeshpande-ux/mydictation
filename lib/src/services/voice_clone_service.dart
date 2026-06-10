@@ -48,7 +48,7 @@ class VoiceCloneService {
     // Check if the server is already running
     bool isRunning = false;
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/voices'))
+      final response = await http.get(Uri.parse('$_baseUrl/health'))
           .timeout(const Duration(seconds: 2));
       isRunning = response.statusCode == 200;
     } catch (_) {
@@ -190,7 +190,7 @@ class VoiceCloneService {
   /// Check if the voice server is running.
   Future<bool> isServerRunning() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/voices'))
+      final response = await http.get(Uri.parse('$_baseUrl/health'))
           .timeout(const Duration(seconds: 3));
       return response.statusCode == 200;
     } catch (e) {

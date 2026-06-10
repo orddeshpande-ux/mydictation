@@ -542,27 +542,32 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
               foregroundColor: Colors.white,
             )
           : null,
-      body: _isLoading
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(height: 20),
-                  Text(
-                    _isStartingServer
-                        ? 'Starting AI engine...'
-                        : 'Loading...',
-                    style: GoogleFonts.inter(color: const Color(0xFF94A3B8)),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: _isLoading
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+                      const SizedBox(height: 20),
+                      Text(
+                        _isStartingServer
+                            ? 'Starting AI engine...'
+                            : 'Loading...',
+                        style: GoogleFonts.inter(color: const Color(0xFF94A3B8)),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            )
-          : !_serverOnline
-              ? _buildOfflineView()
-              : _voices.isEmpty
-                  ? _buildEmptyView()
-                  : _buildVoiceList(),
+                )
+              : !_serverOnline
+                  ? _buildOfflineView()
+                  : _voices.isEmpty
+                      ? _buildEmptyView()
+                      : _buildVoiceList(),
+        ),
+      ),
     );
   }
 

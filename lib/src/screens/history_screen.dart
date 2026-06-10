@@ -132,11 +132,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           width: 80,
                           height: 80,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF6C63FF).withOpacity(0.08),
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Icon(Icons.history_rounded,
-                              size: 40, color: Color(0xFF6C63FF)),
+                          child: Icon(Icons.history_rounded,
+                              size: 40, color: Theme.of(context).colorScheme.primary),
                         ),
                         const SizedBox(height: 20),
                         Text(

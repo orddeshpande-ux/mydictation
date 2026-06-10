@@ -14,14 +14,25 @@ class InsightCardWidget extends StatelessWidget {
     required this.type,
   });
 
-  Color get _color {
+  Color get _accentColor {
     switch (type) {
       case InsightCardType.warning:
-        return Colors.redAccent;
+        return const Color(0xFFEF4444);
       case InsightCardType.suggestion:
-        return Colors.greenAccent;
-      default:
-        return Colors.blueAccent;
+        return const Color(0xFF10B981);
+      case InsightCardType.info:
+        return const Color(0xFF6C63FF);
+    }
+  }
+
+  Color get _bgColor {
+    switch (type) {
+      case InsightCardType.warning:
+        return const Color(0xFFFEF2F2);
+      case InsightCardType.suggestion:
+        return const Color(0xFFECFDF5);
+      case InsightCardType.info:
+        return const Color(0xFFEEF2FF);
     }
   }
 
@@ -30,31 +41,59 @@ class InsightCardWidget extends StatelessWidget {
       case InsightCardType.warning:
         return Icons.warning_amber_rounded;
       case InsightCardType.suggestion:
-        return Icons.lightbulb;
-      default:
-        return Icons.info;
+        return Icons.lightbulb_rounded;
+      case InsightCardType.info:
+        return Icons.info_rounded;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 14),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: _bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border(
+          left: BorderSide(color: _accentColor, width: 4),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(_icon, color: _color, size: 26),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: _accentColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(_icon, color: _accentColor, size: 20),
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  Text(message, style: const TextStyle(fontSize: 14, height: 1.4)),
+                  Text(
+                    message,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.5,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
                 ],
               ),
             ),

@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:omniscribe_ai/src/screens/main_shell.dart';
+import 'package:omniscribe_ai/src/screens/onboarding_screen.dart';
 
 class OmniScribeApp extends StatelessWidget {
-  const OmniScribeApp({super.key});
+  final bool seenOnboarding;
+
+  const OmniScribeApp({
+    super.key,
+    required this.seenOnboarding,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +156,7 @@ class OmniScribeApp extends StatelessWidget {
           thickness: 1,
         ),
       ),
-      home: const MainShell(),
+      home: seenOnboarding ? const MainShell() : const OnboardingScreen(),
     );
   }
 }

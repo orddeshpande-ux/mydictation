@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:omniscribe_ai/app.dart';
 import 'package:omniscribe_ai/src/blocs/dictation_bloc.dart';
@@ -11,6 +12,14 @@ void main() async {
   
   // Launch the local server in the background (no-op if already running or not on Windows)
   await VoiceCloneService.autoStartServer();
+
+  bool seenOnboarding = false;
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    seenOnboarding = prefs.getBool('seen_onboarding') ?? false;
+  } catch (e) {
+    print('Error loading SharedPreferences: $e');
+  }
   
   try {
     await dotenv.load(fileName: ".env");
@@ -31,7 +40,7 @@ void main() async {
   runApp(
     BlocProvider(
       create: (_) => DictationBloc(),
-      child: const OmniScribeApp(),
+      child: OmniScribeApp(seenOnboarding: seenOnboarding),
     ),
   );
 }

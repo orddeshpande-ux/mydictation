@@ -82,7 +82,7 @@ class BrainService {
   /// Test connection to a specific URL.
   Future<bool> testConnection(String url) async {
     try {
-      final response = await http.get(Uri.parse('$url/voices'))
+      final response = await http.get(Uri.parse('$url/health'))
           .timeout(const Duration(seconds: 5));
       return response.statusCode == 200;
     } catch (_) {

@@ -235,8 +235,6 @@ def generate_speech():
         return jsonify({"error": "No text provided"}), 400
 
     try:
-        from TTS.api import TTS
-        
         profile_dir = VOICES_DIR / voice_id
         samples_dir = profile_dir / "samples"
         
@@ -244,8 +242,8 @@ def generate_speech():
         first_sample = meta["samples"][0]["audio_file"]
         speaker_wav = str(samples_dir / first_sample)
         
-        # Generate with XTTS v2
-        tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
+        # Generate with XTTS v2 using cached/lazy-loaded model
+        tts = get_tts_model()
         
         output_name = f"generated_{voice_id}_{uuid.uuid4().hex[:6]}"
         wav_path = str(OUTPUT_DIR / f"{output_name}.wav")
@@ -298,6 +296,19 @@ def download_file(filename):
     if not file_path.exists():
         return jsonify({"error": "File not found"}), 404
     return send_file(str(file_path), as_attachment=True)
+
+
+# Local TTS Support (Coqui XTTS v2 model cache)
+tts_model = None
+
+def get_tts_model():
+    global tts_model
+    if tts_model is None:
+        from TTS.api import TTS
+        print("Loading local XTTS v2 model...")
+        tts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
+        print("XTTS v2 model loaded successfully.")
+    return tts_model
 
 
 # Local LLM Support (Qwen 0.5B model integration)

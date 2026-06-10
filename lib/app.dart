@@ -23,15 +23,15 @@ class OmniScribeApp extends StatelessWidget {
         useMaterial3: true,
         textTheme: baseTextTheme,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6C63FF),
+          seedColor: const Color(0xFF0F766E),
           brightness: Brightness.light,
-          primary: const Color(0xFF6C63FF),
-          secondary: const Color(0xFF8B5CF6),
+          primary: const Color(0xFF0F766E),
+          secondary: const Color(0xFF0D9488),
           surface: Colors.white,
           onSurface: const Color(0xFF1E293B),
           error: const Color(0xFFEF4444),
         ),
-        scaffoldBackgroundColor: const Color(0xFFF5F6FA),
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
         appBarTheme: AppBarTheme(
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF1E293B),
@@ -54,7 +54,7 @@ class OmniScribeApp extends StatelessWidget {
         ),
         chipTheme: ChipThemeData(
           backgroundColor: const Color(0xFFF1F5F9),
-          selectedColor: const Color(0xFF6C63FF).withOpacity(0.12),
+          selectedColor: const Color(0xFF0F766E).withOpacity(0.12),
           labelStyle: GoogleFonts.inter(
             fontSize: 13,
             fontWeight: FontWeight.w500,
@@ -63,7 +63,7 @@ class OmniScribeApp extends StatelessWidget {
           secondaryLabelStyle: GoogleFonts.inter(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF6C63FF),
+            color: const Color(0xFF0F766E),
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -73,7 +73,7 @@ class OmniScribeApp extends StatelessWidget {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6C63FF),
+            backgroundColor: const Color(0xFF0F766E),
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -88,8 +88,8 @@ class OmniScribeApp extends StatelessWidget {
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF6C63FF),
-            side: BorderSide(color: const Color(0xFF6C63FF).withOpacity(0.3)),
+            foregroundColor: const Color(0xFF0F766E),
+            side: BorderSide(color: const Color(0xFF0F766E).withOpacity(0.3)),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -113,7 +113,7 @@ class OmniScribeApp extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF6C63FF), width: 1.5),
+            borderSide: const BorderSide(color: Color(0xFF0F766E), width: 1.5),
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           labelStyle: GoogleFonts.inter(
@@ -127,7 +127,7 @@ class OmniScribeApp extends StatelessWidget {
         ),
         bottomNavigationBarTheme: BottomNavigationBarThemeData(
           backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF6C63FF),
+          selectedItemColor: const Color(0xFF0F766E),
           unselectedItemColor: const Color(0xFF94A3B8),
           type: BottomNavigationBarType.fixed,
           elevation: 8,

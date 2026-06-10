@@ -59,6 +59,12 @@ def save_profile_meta(profile_id, meta):
         json.dump(meta, f, indent=2)
 
 
+@app.route("/health", methods=["GET"])
+def health_check():
+    """Lightweight server health check."""
+    return jsonify({"status": "ok", "timestamp": datetime.now().isoformat()})
+
+
 @app.route("/voices", methods=["GET"])
 def list_voices():
     """List all voice profiles."""

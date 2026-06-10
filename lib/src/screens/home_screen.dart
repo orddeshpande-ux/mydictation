@@ -304,25 +304,32 @@ class _HomeScreenState extends State<HomeScreen> {
               children: DomainMode.values.map((mode) {
                 final isSelected = _selectedMode == mode;
                 String emoji;
+                String modeTooltip;
                 switch (mode) {
                   case DomainMode.legal:
                     emoji = '⚖️';
+                    modeTooltip = 'Format legal terms, structure sections, check jurisdiction';
                     break;
                   case DomainMode.academic:
                     emoji = '🎓';
+                    modeTooltip = 'Check academic style, formatting, and references';
                     break;
                   case DomainMode.spiritual:
                     emoji = '🕉️';
+                    modeTooltip = 'Ensure scriptural clarity and remove speech fillers';
                     break;
                 }
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    avatar: Text(emoji, style: const TextStyle(fontSize: 14)),
-                    label: Text(mode.displayName),
-                    selected: isSelected,
-                    onSelected: (_) =>
-                        setState(() => _selectedMode = mode),
+                  child: Tooltip(
+                    message: modeTooltip,
+                    child: ChoiceChip(
+                      avatar: Text(emoji, style: const TextStyle(fontSize: 14)),
+                      label: Text(mode.displayName),
+                      selected: isSelected,
+                      onSelected: (_) =>
+                          setState(() => _selectedMode = mode),
+                    ),
                   ),
                 );
               }).toList(),
@@ -330,33 +337,36 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: DropdownButton<String>(
-            value: _selectedLocale,
-            underline: const SizedBox(),
-            isDense: true,
-            style: GoogleFonts.inter(
-                fontSize: 13,
-                color: const Color(0xFF64748B),
-                fontWeight: FontWeight.w500),
-            icon: const Icon(Icons.expand_more_rounded,
-                size: 18, color: Color(0xFF94A3B8)),
-            items: const [
-              DropdownMenuItem(
-                  value: 'en_IN', child: Text('EN')),
-              DropdownMenuItem(value: 'hi_IN', child: Text('HI')),
-              DropdownMenuItem(value: 'mr_IN', child: Text('MR')),
-            ],
-            onChanged: (value) {
-              if (value != null) {
-                setState(() => _selectedLocale = value);
-              }
-            },
+        Tooltip(
+          message: 'Select language: EN (English), HI (Hindi), MR (Marathi)',
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: DropdownButton<String>(
+              value: _selectedLocale,
+              underline: const SizedBox(),
+              isDense: true,
+              style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: const Color(0xFF64748B),
+                  fontWeight: FontWeight.w500),
+              icon: const Icon(Icons.expand_more_rounded,
+                  size: 18, color: Color(0xFF94A3B8)),
+              items: const [
+                DropdownMenuItem(
+                    value: 'en_IN', child: Text('EN')),
+                DropdownMenuItem(value: 'hi_IN', child: Text('HI')),
+                DropdownMenuItem(value: 'mr_IN', child: Text('MR')),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedLocale = value);
+                }
+              },
+            ),
           ),
         ),
       ],
@@ -403,6 +413,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildActionIcon(
                 icon: Icons.auto_fix_high_rounded,
                 label: 'Analyze',
+                tooltip: 'Analyze text using AI for grammar and suggestions',
                 onTap: isProcessing
                     ? null
                     : () {
@@ -425,6 +436,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? Icons.stop_circle_rounded
                     : Icons.volume_up_rounded,
                 label: _isSpeaking ? 'Stop' : 'Read',
+                tooltip: _isSpeaking ? 'Stop text-to-speech reading' : 'Read the workspace text aloud',
                 onTap: () async {
                   if (_isSpeaking) {
                     await _ttsService.stop();
@@ -445,26 +457,29 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // Center mic button
-          AnimatedMicButton(
-            isListening: isListening,
-            isProcessing: isProcessing,
-            size: 60,
-            onTap: () async {
-              if (isListening) {
-                context.read<DictationBloc>().add(StopDictation());
-                context.read<DictationBloc>().add(CleanTranscription());
-                context
-                    .read<DictationBloc>()
-                    .add(GenerateInsights(_selectedMode));
-              } else {
-                final hasPerms = await _checkPermissions();
-                if (hasPerms && mounted) {
+          Tooltip(
+            message: isListening ? 'Tap to stop recording' : 'Tap to start recording your voice',
+            child: AnimatedMicButton(
+              isListening: isListening,
+              isProcessing: isProcessing,
+              size: 60,
+              onTap: () async {
+                if (isListening) {
+                  context.read<DictationBloc>().add(StopDictation());
+                  context.read<DictationBloc>().add(CleanTranscription());
                   context
                       .read<DictationBloc>()
-                      .add(StartDictation(localeId: _selectedLocale));
+                      .add(GenerateInsights(_selectedMode));
+                } else {
+                  final hasPerms = await _checkPermissions();
+                  if (hasPerms && mounted) {
+                    context
+                        .read<DictationBloc>()
+                        .add(StartDictation(localeId: _selectedLocale));
+                  }
                 }
-              }
-            },
+              },
+            ),
           ),
 
           // Right actions
@@ -473,6 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildActionIcon(
                 icon: Icons.copy_rounded,
                 label: 'Copy',
+                tooltip: 'Copy current text to phone clipboard',
                 onTap: () {
                   if (_controller.text.trim().isEmpty) {
                     _showSnack('Nothing to copy');
@@ -486,6 +502,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildActionIcon(
                 icon: Icons.save_alt_rounded,
                 label: 'Save',
+                tooltip: 'Save text to History log and download file',
                 onTap: () async {
                   if (_controller.text.isEmpty) {
                     _showSnack('Nothing to save');
@@ -517,43 +534,47 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildActionIcon({
     required IconData icon,
     required String label,
+    required String tooltip,
     VoidCallback? onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: onTap == null
-                  ? const Color(0xFFF1F5F9)
-                  : const Color(0xFFF8F9FC),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.grey.shade200,
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: onTap == null
+                    ? const Color(0xFFF1F5F9)
+                    : const Color(0xFFF8F9FC),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Colors.grey.shade200,
+                ),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: onTap == null
+                    ? const Color(0xFFCBD5E1)
+                    : const Color(0xFF6C63FF),
               ),
             ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: onTap == null
-                  ? const Color(0xFFCBD5E1)
-                  : const Color(0xFF6C63FF),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF94A3B8),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF94A3B8),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

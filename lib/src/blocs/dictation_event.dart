@@ -7,9 +7,27 @@ abstract class DictationEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class StartDictation extends DictationEvent {}
+class StartDictation extends DictationEvent {
+  final String? localeId;
+
+  const StartDictation({this.localeId});
+
+  @override
+  List<Object?> get props => [localeId];
+}
 
 class StopDictation extends DictationEvent {}
+
+class CleanTranscription extends DictationEvent {}
+
+class GenerateInsights extends DictationEvent {
+  final DomainMode mode;
+
+  const GenerateInsights(this.mode);
+
+  @override
+  List<Object?> get props => [mode];
+}
 
 class UpdateTranscript extends DictationEvent {
   final String transcript;

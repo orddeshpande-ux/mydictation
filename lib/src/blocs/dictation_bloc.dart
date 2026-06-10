@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:omniscribe_ai/src/models/domain_mode.dart';
+import 'package:omniscribe_ai/src/services/domain_service.dart';
 import 'package:omniscribe_ai/src/services/stt_service.dart';
 
 part 'dictation_event.dart';
@@ -7,12 +10,16 @@ part 'dictation_state.dart';
 
 class DictationBloc extends Bloc<DictationEvent, DictationState> {
   final SpeechToTextService _sttService;
+  final DomainService _domainService;
 
-  DictationBloc({SpeechToTextService? sttService})
+  DictationBloc({SpeechToTextService? sttService, DomainService? domainService})
       : _sttService = sttService ?? SpeechToTextService(),
+        _domainService = domainService ?? DomainService(),
         super(const DictationState.initial()) {
     on<StartDictation>(_onStartDictation);
     on<StopDictation>(_onStopDictation);
+    on<CleanTranscription>(_onCleanTranscription);
+    on<GenerateInsights>(_onGenerateInsights);
     on<UpdateTranscript>(_onUpdateTranscript);
     on<DictationErrorOccurred>(_onDictationErrorOccurred);
   }
@@ -21,6 +28,7 @@ class DictationBloc extends Bloc<DictationEvent, DictationState> {
     emit(state.copyWith(isDictating: true, status: DictationStatus.listening, errorMessage: ''));
     try {
       await _sttService.startListening(
+        localeId: event.localeId,
         onResult: (text) {
           add(UpdateTranscript(text));
         },
@@ -52,5 +60,52 @@ class DictationBloc extends Bloc<DictationEvent, DictationState> {
       status: DictationStatus.error,
       errorMessage: event.errorMessage,
     ));
+  }
+
+  Future<void> _onCleanTranscription(CleanTranscription event, Emitter<DictationState> emit) async {
+    if (state.transcript.trim().isEmpty) return;
+    
+    emit(state.copyWith(status: DictationStatus.processing));
+    try {
+      final cleanedText = await _domainService.cleanTranscript(state.transcript);
+      emit(state.copyWith(transcript: cleanedText, status: DictationStatus.idle));
+    } catch (e) {
+      emit(state.copyWith(status: DictationStatus.idle, errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> _onGenerateInsights(GenerateInsights event, Emitter<DictationState> emit) async {
+    if (state.transcript.trim().isEmpty) return;
+    
+    emit(state.copyWith(status: DictationStatus.processing));
+    try {
+      final responseStr = await _domainService.reviewTranscript(state.transcript, event.mode);
+      
+      // Parse JSON
+      List<Insight> newInsights = [];
+      try {
+        final parsed = jsonDecode(responseStr) as List;
+        for (var item in parsed) {
+          if (item is Map) {
+            newInsights.add(Insight(
+              title: item['title'] ?? 'Insight',
+              message: item['message'] ?? '',
+              type: item['type'] ?? 'info',
+            ));
+          }
+        }
+      } catch (e) {
+        // Fallback if model fails to output valid JSON
+        newInsights.add(Insight(
+          title: 'Analysis Result',
+          message: responseStr,
+          type: 'info',
+        ));
+      }
+      
+      emit(state.copyWith(insights: newInsights, status: DictationStatus.idle));
+    } catch (e) {
+      emit(state.copyWith(status: DictationStatus.idle, errorMessage: e.toString()));
+    }
   }
 }

@@ -23,3 +23,11 @@ ios/Pods/
 *.ipynb
 *.log
 
+# Python / Server cache and outputs
+__pycache__/
+*.pyc
+voice_server/voices/
+voice_server/output/
+.venv/
+venv/
+

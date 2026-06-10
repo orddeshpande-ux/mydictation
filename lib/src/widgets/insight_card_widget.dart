@@ -14,25 +14,25 @@ class InsightCardWidget extends StatelessWidget {
     required this.type,
   });
 
-  Color get _accentColor {
+  Color _getAccentColor(BuildContext context) {
     switch (type) {
       case InsightCardType.warning:
         return const Color(0xFFEF4444);
       case InsightCardType.suggestion:
         return const Color(0xFF10B981);
       case InsightCardType.info:
-        return const Color(0xFF6C63FF);
+        return Theme.of(context).colorScheme.primary;
     }
   }
 
-  Color get _bgColor {
+  Color _getBgColor(BuildContext context) {
     switch (type) {
       case InsightCardType.warning:
         return const Color(0xFFFEF2F2);
       case InsightCardType.suggestion:
         return const Color(0xFFECFDF5);
       case InsightCardType.info:
-        return const Color(0xFFEEF2FF);
+        return Theme.of(context).colorScheme.primary.withOpacity(0.08);
     }
   }
 
@@ -49,13 +49,16 @@ class InsightCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = _getAccentColor(context);
+    final bgColor = _getBgColor(context);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: _bgColor,
+        color: bgColor,
         borderRadius: BorderRadius.circular(16),
         border: Border(
-          left: BorderSide(color: _accentColor, width: 4),
+          left: BorderSide(color: accentColor, width: 4),
         ),
       ),
       child: Padding(
@@ -67,10 +70,10 @@ class InsightCardWidget extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: _accentColor.withOpacity(0.15),
+                color: accentColor.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(_icon, color: _accentColor, size: 20),
+              child: Icon(_icon, color: accentColor, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(

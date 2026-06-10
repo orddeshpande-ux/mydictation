@@ -114,4 +114,31 @@ if "%CHOICE%"=="1" (
     call flutter run -d android
 )
 
+REM 4. Sync files (audios, videos, voice profiles)
+echo.
+echo ============================================================
+echo   Syncing generated audio/video files and voice profiles...
+echo ============================================================
+echo.
+
+REM Create directories on phone
+"%SDK_PATH%\platform-tools\adb.exe" shell mkdir -p /sdcard/Download/OmniScribe
+"%SDK_PATH%\platform-tools\adb.exe" shell mkdir -p /sdcard/Download/OmniScribe/Profiles
+
+if exist "voice_server\output" (
+    echo Syncing generated MP3/MP4 files to phone...
+    "%SDK_PATH%\platform-tools\adb.exe" push voice_server\output\. /sdcard/Download/OmniScribe/
+)
+if exist "voice_server\voices" (
+    echo Syncing voice profiles metadata to phone...
+    "%SDK_PATH%\platform-tools\adb.exe" push voice_server\voices\. /sdcard/Download/OmniScribe/Profiles/
+)
+
+echo.
+echo ============================================================
+echo   Sync complete! You can find your files on your phone under:
+echo   Files -> Downloads -> OmniScribe
+echo ============================================================
+echo.
+
 pause

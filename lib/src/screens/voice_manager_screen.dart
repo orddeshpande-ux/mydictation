@@ -220,9 +220,9 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(Icons.audiotrack_rounded,
+                                    Icon(Icons.audiotrack_rounded,
                                         size: 16,
-                                        color: Color(0xFF6C63FF)),
+                                        color: Theme.of(context).colorScheme.primary),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -537,7 +537,7 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
               onPressed: _showCreateVoiceSheet,
               icon: const Icon(Icons.add_rounded),
               label: const Text('Add Voice'),
-              backgroundColor: const Color(0xFF6C63FF),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
             )
           : null,
@@ -546,7 +546,7 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircularProgressIndicator(color: Color(0xFF6C63FF)),
+                  CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
                   const SizedBox(height: 20),
                   Text(
                     _isStartingServer
@@ -575,11 +575,11 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: const Color(0xFF6C63FF).withOpacity(0.08),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(Icons.offline_bolt_rounded,
-                size: 40, color: Color(0xFF6C63FF)),
+            child: Icon(Icons.offline_bolt_rounded,
+                size: 40, color: Theme.of(context).colorScheme.primary),
           ),
           const SizedBox(height: 20),
           Text(
@@ -641,11 +641,11 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: const Color(0xFF6C63FF).withOpacity(0.08),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(Icons.person_add_rounded,
-                size: 40, color: Color(0xFF6C63FF)),
+            child: Icon(Icons.person_add_rounded,
+                size: 40, color: Theme.of(context).colorScheme.primary),
           ),
           const SizedBox(height: 20),
           Text(
@@ -727,10 +727,10 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
+                            gradient: LinearGradient(
                               colors: [
-                                Color(0xFF6C63FF),
-                                Color(0xFF8B5CF6)
+                                Theme.of(context).colorScheme.primary,
+                                Theme.of(context).colorScheme.secondary,
                               ],
                             ),
                             borderRadius: BorderRadius.circular(14),

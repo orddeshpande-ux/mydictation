@@ -20,7 +20,7 @@ dependencies:
   supabase_flutter: ^2.5.4
   shared_preferences: ^2.2.3
   file_picker: ^8.0.0+1
-  google_fonts: ^6.2.0
+  google_fonts: 6.1.0
   permission_handler: ^11.0.1
   flutter_secure_storage: ^9.0.0
 

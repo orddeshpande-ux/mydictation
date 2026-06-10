@@ -7,8 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class VoiceCloneService {
   static const String _defaultUrl = 'http://localhost:5050';
   static String _baseUrl = _defaultUrl;
+  final http.Client _client;
 
-  VoiceCloneService();
+  VoiceCloneService({http.Client? client}) : _client = client ?? http.Client();
 
   /// Retrieve the current configured URL.
   static String get baseUrl => _baseUrl;
@@ -85,7 +86,7 @@ class VoiceCloneService {
   /// List all voice profiles from the server.
   Future<List<Map<String, dynamic>>> listVoices() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/voices'))
+      final response = await _client.get(Uri.parse('$_baseUrl/voices'))
           .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final list = jsonDecode(response.body) as List;
@@ -117,7 +118,7 @@ class VoiceCloneService {
         ));
       }
 
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 60));
+      final streamedResponse = await _client.send(request).timeout(const Duration(seconds: 60));
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 201) {
@@ -132,7 +133,7 @@ class VoiceCloneService {
   /// Start training a voice profile.
   Future<bool> trainVoice(String voiceId) async {
     try {
-      final response = await http.post(Uri.parse('$_baseUrl/voices/$voiceId/train'))
+      final response = await _client.post(Uri.parse('$_baseUrl/voices/$voiceId/train'))
           .timeout(const Duration(seconds: 10));
       return response.statusCode == 200;
     } catch (e) {
@@ -144,7 +145,7 @@ class VoiceCloneService {
   /// Check training status of a voice profile.
   Future<Map<String, dynamic>?> getVoiceStatus(String voiceId) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/voices/$voiceId/status'))
+      final response = await _client.get(Uri.parse('$_baseUrl/voices/$voiceId/status'))
           .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -163,7 +164,7 @@ class VoiceCloneService {
     String format = 'mp3',
   }) async {
     try {
-      final response = await http.post(
+      final response = await _client.post(
         Uri.parse('$_baseUrl/generate'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -190,7 +191,7 @@ class VoiceCloneService {
   /// Check if the voice server is running.
   Future<bool> isServerRunning() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/health'))
+      final response = await _client.get(Uri.parse('$_baseUrl/health'))
           .timeout(const Duration(seconds: 3));
       return response.statusCode == 200;
     } catch (e) {

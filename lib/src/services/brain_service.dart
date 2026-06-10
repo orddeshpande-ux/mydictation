@@ -6,6 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class BrainService {
   static const String _defaultUrl = 'http://localhost:5050';
+  final http.Client _client;
+
+  BrainService({http.Client? client}) : _client = client ?? http.Client();
 
   Future<String> _getBaseUrl() async {
     try {
@@ -34,7 +37,7 @@ class BrainService {
     
     final baseUrl = await _getBaseUrl();
     try {
-      final response = await http.post(
+      final response = await _client.post(
         Uri.parse('$baseUrl/analyze'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -61,7 +64,7 @@ class BrainService {
     
     final baseUrl = await _getBaseUrl();
     try {
-      final response = await http.post(
+      final response = await _client.post(
         Uri.parse('$baseUrl/clean'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -82,7 +85,7 @@ class BrainService {
   /// Test connection to a specific URL.
   Future<bool> testConnection(String url) async {
     try {
-      final response = await http.get(Uri.parse('$url/health'))
+      final response = await _client.get(Uri.parse('$url/health'))
           .timeout(const Duration(seconds: 5));
       return response.statusCode == 200;
     } catch (_) {

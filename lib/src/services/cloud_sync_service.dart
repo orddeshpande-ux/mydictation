@@ -12,6 +12,8 @@ class CloudSyncService {
     }
   }
 
+  bool get isConfigured => _supabase != null;
+
   Future<String?> uploadVoiceProfile(File audioFile, String userId) async {
     if (_supabase == null) {
       print('CloudSync Error: Supabase not initialized.');

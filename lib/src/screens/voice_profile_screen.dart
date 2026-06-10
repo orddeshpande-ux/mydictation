@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:omniscribe_ai/src/services/cloud_sync_service.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class VoiceProfileScreen extends StatefulWidget {
   const VoiceProfileScreen({super.key});
@@ -44,10 +46,64 @@ class _VoiceProfileScreenState extends State<VoiceProfileScreen> {
           _isRecording = true;
           _recordingPath = null;
         });
+      } else {
+        _showPermissionDeniedDialog();
       }
     } catch (e) {
-      print('Recording error: $e');
+      _showErrorDialog('Failed to start recording: $e');
     }
+  }
+
+  void _showPermissionDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Microphone Permission Required',
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'OmniScribe AI needs access to your microphone to record your voice profile. Please grant microphone access in the app settings.',
+          style: GoogleFonts.inter(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6C63FF),
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Open Settings', style: GoogleFonts.inter()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Error',
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.red),
+        ),
+        content: Text(message, style: GoogleFonts.inter()),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK', style: GoogleFonts.inter()),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _stopRecording() async {
@@ -112,6 +168,48 @@ class _VoiceProfileScreenState extends State<VoiceProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (!_cloudSync.isConfigured) ...[
+              Container(
+                margin: const EdgeInsets.bottom(20),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.amber.shade800, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Cloud Sync Offline',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: const Color(0xFF92400E),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'The cloud database (Supabase) is not configured in your environment (.env file). Voice profile recording will only be saved locally and won\'t be backed up to the cloud.',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: const Color(0xFF92400E),
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const Text(
               'Create Your Custom Voice Profile',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),

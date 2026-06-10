@@ -84,7 +84,34 @@ REM 3. Deploy
 echo.
 echo Connected Android device detected!
 echo.
-echo Building and deploying to your mobile device...
+echo What would you like to do?
+echo   [1] Build and Sideload (Install permanent standalone app on phone) - RECOMMENDED
+echo   [2] Run in Test Mode (Launch temporary app for editing/debugging)
 echo.
-flutter run -d android
+set /p CHOICE="Enter choice (1 or 2, default is 1): "
+
+if "%CHOICE%"=="" set CHOICE=1
+
+if "%CHOICE%"=="1" (
+    echo.
+    echo Building permanent release application (APK)...
+    call flutter build apk --release
+    echo.
+    echo Installing (sideloading) application onto your phone...
+    "%SDK_PATH%\platform-tools\adb.exe" install -r build\app\outputs\flutter-apk\app-release.apk
+    if !errorlevel! equ 0 (
+        echo.
+        echo ============================================================
+        echo   OmniScribe AI has been successfully installed on your phone!
+        echo   You can find it on your home screen or app drawer.
+        echo ============================================================
+    ) else (
+        echo [ERROR] Failed to install application. Ensure your phone screen is unlocked.
+    )
+) else (
+    echo.
+    echo Building and deploying in Test Mode...
+    call flutter run -d android
+)
+
 pause

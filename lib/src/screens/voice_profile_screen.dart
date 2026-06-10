@@ -170,7 +170,7 @@ class _VoiceProfileScreenState extends State<VoiceProfileScreen> {
           children: [
             if (!_cloudSync.isConfigured) ...[
               Container(
-                margin: const EdgeInsets.bottom(20),
+                margin: const EdgeInsets.only(bottom: 20),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFFBEB),

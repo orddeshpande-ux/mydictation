@@ -85,11 +85,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6C63FF).withOpacity(0.1),
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.dns_rounded,
-                            color: Color(0xFF6C63FF), size: 22),
+                        child: Icon(Icons.dns_rounded,
+                            color: Theme.of(context).colorScheme.primary, size: 22),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -238,8 +238,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF6C63FF), Color(0xFF8B5CF6)],
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(context).colorScheme.secondary,
+                            ],
                           ),
                           borderRadius: BorderRadius.circular(14),
                         ),

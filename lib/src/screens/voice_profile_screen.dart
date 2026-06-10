@@ -77,7 +77,7 @@ class _VoiceProfileScreenState extends State<VoiceProfileScreen> {
               openAppSettings();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6C63FF),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
             ),
             child: Text('Open Settings', style: GoogleFonts.inter()),

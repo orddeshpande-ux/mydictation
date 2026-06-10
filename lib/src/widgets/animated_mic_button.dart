@@ -79,8 +79,8 @@ class _AnimatedMicButtonState extends State<AnimatedMicButton>
     final Color primaryColor = widget.isListening
         ? const Color(0xFFEF4444) // Red when listening
         : widget.isProcessing
-            ? const Color(0xFF8B5CF6) // Violet when processing
-            : const Color(0xFF6C63FF); // Indigo default
+            ? Theme.of(context).colorScheme.secondary // Secondary color when processing
+            : Theme.of(context).colorScheme.primary; // Primary color default
 
     final Color glowColor = primaryColor.withOpacity(0.4);
 

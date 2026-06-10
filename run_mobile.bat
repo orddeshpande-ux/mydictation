@@ -13,7 +13,10 @@ echo.
 
 REM 1. Check for Android SDK
 set SDK_FOUND=0
-if exist "%LOCALAPPDATA%\Android\Sdk" (
+if exist "%USERPROFILE%\AppData\Local\Android\Sdk" (
+    set SDK_FOUND=1
+    set SDK_PATH=%USERPROFILE%\AppData\Local\Android\Sdk
+) else if exist "%LOCALAPPDATA%\Android\Sdk" (
     set SDK_FOUND=1
     set SDK_PATH=%LOCALAPPDATA%\Android\Sdk
 ) else if not "%ANDROID_HOME%"=="" (
@@ -26,6 +29,12 @@ if exist "%LOCALAPPDATA%\Android\Sdk" (
         set SDK_FOUND=1
         set SDK_PATH=%ANDROID_SDK_ROOT%
     )
+) else if exist "C:\Android\Sdk" (
+    set SDK_FOUND=1
+    set SDK_PATH=C:\Android\Sdk
+) else if exist "D:\Android\Sdk" (
+    set SDK_FOUND=1
+    set SDK_PATH=D:\Android\Sdk
 )
 
 if %SDK_FOUND%==0 (

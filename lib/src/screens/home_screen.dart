@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +9,7 @@ import 'package:omniscribe_ai/src/widgets/insight_card_widget.dart';
 import 'package:omniscribe_ai/src/widgets/animated_mic_button.dart';
 import 'package:omniscribe_ai/src/widgets/glass_card.dart';
 import 'package:omniscribe_ai/src/services/tts_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 // Conditional imports for web vs native file saving
 import 'package:omniscribe_ai/src/utils/save_stub.dart'
@@ -101,6 +103,9 @@ class _HomeScreenState extends State<HomeScreen> {
             _controller.text = state.transcript;
             _controller.selection =
                 TextSelection.collapsed(offset: _controller.text.length);
+          }
+          if (state.status == DictationStatus.error && state.errorMessage.isNotEmpty) {
+            _showSnack(state.errorMessage);
           }
         },
         child: BlocBuilder<DictationBloc, DictationState>(
@@ -444,7 +449,7 @@ class _HomeScreenState extends State<HomeScreen> {
             isListening: isListening,
             isProcessing: isProcessing,
             size: 60,
-            onTap: () {
+            onTap: () async {
               if (isListening) {
                 context.read<DictationBloc>().add(StopDictation());
                 context.read<DictationBloc>().add(CleanTranscription());
@@ -452,9 +457,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     .read<DictationBloc>()
                     .add(GenerateInsights(_selectedMode));
               } else {
-                context
-                    .read<DictationBloc>()
-                    .add(StartDictation(localeId: _selectedLocale));
+                final hasPerms = await _checkPermissions();
+                if (hasPerms && mounted) {
+                  context
+                      .read<DictationBloc>()
+                      .add(StartDictation(localeId: _selectedLocale));
+                }
               }
             },
           ),
@@ -553,6 +561,148 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showSnack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
+    );
+  }
+
+  Future<bool> _checkPermissions() async {
+    if (kIsWeb) return true;
+    
+    // Check target platform
+    final platform = Theme.of(context).platform;
+    if (platform != TargetPlatform.android && platform != TargetPlatform.iOS) {
+      return true;
+    }
+
+    final micStatus = await Permission.microphone.status;
+    if (micStatus.isGranted) {
+      if (platform == TargetPlatform.iOS) {
+        final speechStatus = await Permission.speech.status;
+        if (speechStatus.isGranted) {
+          return true;
+        } else if (speechStatus.isPermanentlyDenied) {
+          _showSettingsDialog('Speech Recognition');
+          return false;
+        } else {
+          final res = await Permission.speech.request();
+          return res.isGranted;
+        }
+      }
+      return true;
+    }
+
+    if (micStatus.isPermanentlyDenied) {
+      _showSettingsDialog('Microphone');
+      return false;
+    }
+
+    // Check if rationale is needed (Android-specific behavior)
+    final showRationale = await Permission.microphone.shouldShowRequestRationale;
+    if (showRationale) {
+      final proceed = await _showRationaleDialog();
+      if (!proceed) return false;
+    }
+
+    final requestResult = await Permission.microphone.request();
+    if (requestResult.isGranted) {
+      if (platform == TargetPlatform.iOS) {
+        final speechStatus = await Permission.speech.request();
+        return speechStatus.isGranted;
+      }
+      return true;
+    } else if (requestResult.isPermanentlyDenied) {
+      _showSettingsDialog('Microphone');
+    }
+    return false;
+  }
+
+  Future<bool> _showRationaleDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Microphone Access Needed',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF1E293B),
+          ),
+        ),
+        content: Text(
+          'OmniScribe AI requires microphone permission to listen to your voice and convert it into text.',
+          style: GoogleFonts.inter(
+            color: const Color(0xFF64748B),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: const Color(0xFF94A3B8)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6C63FF),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Allow Access',
+              style: GoogleFonts.inter(),
+            ),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+
+  void _showSettingsDialog(String permissionName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Permission Required',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF1E293B),
+          ),
+        ),
+        content: Text(
+          'The $permissionName permission is permanently denied. Please enable it in the system settings to continue using dictation.',
+          style: GoogleFonts.inter(
+            color: const Color(0xFF64748B),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: const Color(0xFF94A3B8)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6C63FF),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Open Settings',
+              style: GoogleFonts.inter(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

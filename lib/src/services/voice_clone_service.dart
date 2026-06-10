@@ -33,11 +33,17 @@ class VoiceCloneService {
   }
 
   /// Automatically launch the voice server on Windows if not running.
+  /// On mobile platforms, this is a no-op (user must configure server IP via Settings).
   static Future<void> autoStartServer() async {
     if (kIsWeb) return;
-    
+
     // First load the configured URL
     await loadBaseUrl();
+
+    // On mobile (non-desktop), skip server launch — just load the URL
+    if (!Platform.isWindows && !Platform.isLinux && !Platform.isMacOS) {
+      return;
+    }
 
     // Check if the server is already running
     bool isRunning = false;
@@ -48,12 +54,12 @@ class VoiceCloneService {
     } catch (_) {
       isRunning = false;
     }
-    
+
     if (isRunning) {
       print('VoiceCloneService: Voice server is already running at $_baseUrl.');
       return;
     }
-    
+
     // Only launch local server if we are on Windows and referencing localhost
     if (Platform.isWindows && _baseUrl.contains('localhost')) {
       print('VoiceCloneService: Attempting to launch local voice server in the background...');

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,6 +13,17 @@ class BrainService {
       return prefs.getString('voice_server_url') ?? _defaultUrl;
     } catch (_) {
       return _defaultUrl;
+    }
+  }
+
+  /// Differentiate connection errors to provide clear, actionable feedback to users.
+  String _handleError(dynamic error, String url) {
+    if (error is TimeoutException) {
+      return 'Connection Timeout: The AI server at $url took too long to respond. The model may be loading or busy processing another request.';
+    } else if (error is SocketException) {
+      return 'Server Offline: Cannot reach the AI server at $url. Ensure the backend server is running and your mobile device is on the same local network/Wi-Fi.';
+    } else {
+      return 'Connection Error: Failed to communicate with local AI server. Details: $error';
     }
   }
 
@@ -28,16 +41,16 @@ class BrainService {
           'text': transcript,
           'system_prompt': systemPrompt,
         }),
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(const Duration(seconds: 60)); // Increased to 60s for local LLM inference over Wi-Fi
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         return data['analysis'] ?? '';
       } else {
-        return 'Local LLM analysis error (Status ${response.statusCode})';
+        return 'Server Error (Status ${response.statusCode}): The AI engine returned an error during analysis.';
       }
     } catch (e) {
-      return 'Offline Mode: Local AI model is starting up or disconnected. Please ensure the backend server is running.';
+      return _handleError(e, baseUrl);
     }
   }
 
@@ -54,15 +67,26 @@ class BrainService {
         body: jsonEncode({
           'text': transcript,
         }),
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(const Duration(seconds: 60)); // Increased to 60s for local inference
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         return data['cleaned_text'] ?? '';
       }
     } catch (e) {
-      print('BrainService: Failed to clean transcript: $e');
+      print('BrainService: Failed to clean transcript: ${_handleError(e, baseUrl)}');
     }
     return transcript;
+  }
+
+  /// Test connection to a specific URL.
+  Future<bool> testConnection(String url) async {
+    try {
+      final response = await http.get(Uri.parse('$url/voices'))
+          .timeout(const Duration(seconds: 5));
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 }

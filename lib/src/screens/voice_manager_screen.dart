@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:omniscribe_ai/src/services/voice_clone_service.dart';
 import 'package:omniscribe_ai/src/screens/training_guide_screen.dart';
+import 'package:omniscribe_ai/src/widgets/glass_card.dart';
+import 'package:omniscribe_ai/src/widgets/connection_status_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class VoiceManagerScreen extends StatefulWidget {
@@ -18,52 +21,19 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
   bool _isLoading = true;
   bool _serverOnline = false;
   bool _isStartingServer = false;
-  final TextEditingController _ipController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _ipController.text = VoiceCloneService.baseUrl;
     _checkServerAndLoad();
-  }
-
-  @override
-  void dispose() {
-    _ipController.dispose();
-    super.dispose();
   }
 
   Future<void> _checkServerAndLoad() async {
     setState(() => _isLoading = true);
     await VoiceCloneService.loadBaseUrl();
-    _ipController.text = VoiceCloneService.baseUrl;
     _serverOnline = await _voiceService.isServerRunning();
     if (_serverOnline) {
       _voices = await _voiceService.listVoices();
-    }
-    setState(() => _isLoading = false);
-  }
-
-  Future<void> _updateServerUrl() async {
-    final newUrl = _ipController.text.trim();
-    if (newUrl.isEmpty) return;
-    
-    setState(() => _isLoading = true);
-    await VoiceCloneService.saveBaseUrl(newUrl);
-    _serverOnline = await _voiceService.isServerRunning();
-    if (_serverOnline) {
-      _voices = await _voiceService.listVoices();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Successfully connected to AI server at $newUrl')),
-        );
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not connect. Please check the IP/URL and try again.')),
-        );
-      }
     }
     setState(() => _isLoading = false);
   }
@@ -76,7 +46,6 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
 
     await VoiceCloneService.autoStartServer();
 
-    // Loop check for connection (takes up to 25 seconds)
     for (int i = 0; i < 8; i++) {
       await Future.delayed(const Duration(seconds: 3));
       _serverOnline = await _voiceService.isServerRunning();
@@ -87,14 +56,16 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
       _voices = await _voiceService.listVoices();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Offline AI Engine started successfully!')),
+          const SnackBar(
+              content: Text('AI Engine started successfully!')),
         );
       }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Offline AI Engine is starting in the background. If launching for the first time, it might take a few minutes to configure components.'),
+            content: Text(
+                'AI Engine is starting in the background. Please wait...'),
             duration: Duration(seconds: 6),
           ),
         );
@@ -107,145 +78,231 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
     });
   }
 
-  Future<void> _showCreateVoiceDialog() async {
+  Future<void> _showCreateVoiceSheet() async {
     final nameController = TextEditingController();
     List<PlatformFile> pickedFiles = [];
     List<TextEditingController> transcriptControllers = [];
 
-    await showDialog(
+    await showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Add a New Person\'s Voice'),
-          content: SizedBox(
-            width: 500,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Create a profile to clone a new voice (e.g., your brother\'s, father\'s, or your own). You will need to upload recordings and provide what they said.',
-                    style: TextStyle(fontSize: 13, color: Colors.black54),
+        builder: (ctx, setSheetState) => Container(
+          height: MediaQuery.of(ctx).size.height * 0.85,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Person\'s Name',
-                      hintText: 'e.g., "Father\'s Voice"',
-                      border: OutlineInputBorder(),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Text(
+                      'New Voice Profile',
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1E293B),
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancel'),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(),
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Create a profile to clone a voice. Upload recordings and provide transcripts.',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Person\'s Name',
+                          hintText: 'e.g., "Father\'s Voice"',
+                          prefixIcon: Icon(Icons.person_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Recording Samples',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '5-10 short, clear recordings recommended',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final result =
+                                await FilePicker.platform.pickFiles(
+                              allowMultiple: true,
+                              type: FileType.custom,
+                              allowedExtensions: [
+                                'mp3',
+                                'wav',
+                                'mp4',
+                                'm4a',
+                                'ogg'
+                              ],
+                              withData: true,
+                            );
+                            if (result != null) {
+                              setSheetState(() {
+                                pickedFiles.addAll(result.files);
+                                for (var _ in result.files) {
+                                  transcriptControllers
+                                      .add(TextEditingController());
+                                }
+                              });
+                            }
+                          },
+                          icon:
+                              const Icon(Icons.upload_file_rounded, size: 18),
+                          label: const Text('Select Audio Files'),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (pickedFiles.isNotEmpty)
+                        ...List.generate(pickedFiles.length, (i) {
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8F9FC),
+                              borderRadius: BorderRadius.circular(14),
+                              border:
+                                  Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.audiotrack_rounded,
+                                        size: 16,
+                                        color: Color(0xFF6C63FF)),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        pickedFiles[i].name,
+                                        style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        setSheetState(() {
+                                          pickedFiles.removeAt(i);
+                                          transcriptControllers
+                                              .removeAt(i);
+                                        });
+                                      },
+                                      child: const Icon(Icons.close_rounded,
+                                          size: 18,
+                                          color: Color(0xFFEF4444)),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                TextField(
+                                  controller: transcriptControllers[i],
+                                  maxLines: 2,
+                                  decoration: const InputDecoration(
+                                    labelText: 'What is spoken?',
+                                    hintText: 'Type word-for-word...',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                    ],
+                  ),
+                ),
+              ),
+              // Save button
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: pickedFiles.isEmpty ||
+                            nameController.text.trim().isEmpty
+                        ? null
+                        : () async {
+                            Navigator.pop(ctx);
+                            await _createVoice(
+                              nameController.text.trim(),
+                              pickedFiles,
+                              transcriptControllers
+                                  .map((c) => c.text)
+                                  .toList(),
+                            );
+                          },
+                    icon: const Icon(Icons.save_rounded, size: 18),
+                    label: const Text('Create Profile'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Upload Recording Samples:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'For best results, upload clear recordings with no background noise. 5 to 10 short samples are recommended.',
-                    style: TextStyle(fontSize: 12, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final result = await FilePicker.platform.pickFiles(
-                        allowMultiple: true,
-                        type: FileType.custom,
-                        allowedExtensions: ['mp3', 'wav', 'mp4', 'm4a', 'ogg'],
-                        withData: true,
-                      );
-                      if (result != null) {
-                        setDialogState(() {
-                          pickedFiles.addAll(result.files);
-                          for (var _ in result.files) {
-                            transcriptControllers.add(TextEditingController());
-                          }
-                        });
-                      }
-                    },
-                    icon: const Icon(Icons.upload_file),
-                    label: const Text('Select Audio Recordings'),
-                  ),
-                  const SizedBox(height: 16),
-                  if (pickedFiles.isNotEmpty)
-                    ...List.generate(pickedFiles.length, (i) {
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.audiotrack, size: 18, color: Colors.blueAccent),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      pickedFiles[i].name,
-                                      style: const TextStyle(fontWeight: FontWeight.w600),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.close, size: 18, color: Colors.red),
-                                    onPressed: () {
-                                      setDialogState(() {
-                                        pickedFiles.removeAt(i);
-                                        transcriptControllers.removeAt(i);
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              TextField(
-                                controller: transcriptControllers[i],
-                                maxLines: 3,
-                                decoration: const InputDecoration(
-                                  labelText: 'What is spoken in this recording?',
-                                  hintText: 'Type word-for-word what the person said in this audio file...',
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: pickedFiles.isEmpty || nameController.text.trim().isEmpty
-                  ? null
-                  : () async {
-                      Navigator.pop(ctx);
-                      await _createVoice(
-                        nameController.text.trim(),
-                        pickedFiles,
-                        transcriptControllers.map((c) => c.text).toList(),
-                      );
-                    },
-              child: const Text('Save Profile'),
-            ),
-          ],
         ),
       ),
     );
   }
 
-  Future<void> _createVoice(String name, List<PlatformFile> files, List<String> transcripts) async {
+  Future<void> _createVoice(
+      String name, List<PlatformFile> files, List<String> transcripts) async {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Saving profile and uploading recordings...')),
+      const SnackBar(content: Text('Creating voice profile...')),
     );
 
     List<Uint8List> audioBytes = [];
@@ -266,12 +323,14 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
 
     if (result != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Voice profile "${result['name']}" created successfully with ${result['sample_count']} samples.')),
+        SnackBar(
+            content: Text(
+                'Profile "${result['name']}" created with ${result['sample_count']} samples.')),
       );
       _checkServerAndLoad();
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create voice profile. Ensure the AI server is active.')),
+        const SnackBar(content: Text('Failed to create profile.')),
       );
     }
   }
@@ -280,96 +339,146 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
     final success = await _voiceService.trainVoice(voiceId);
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Voice learning started for "$name". The AI will process the recordings in the background.')),
+        SnackBar(content: Text('Voice learning started for "$name".')),
       );
       await Future.delayed(const Duration(seconds: 4));
       _checkServerAndLoad();
     }
   }
 
-  Future<void> _showGenerateDialog(String voiceId, String voiceName) async {
+  Future<void> _showGenerateSheet(String voiceId, String voiceName) async {
     final textController = TextEditingController();
     String selectedFormat = 'mp3';
 
-    await showDialog(
+    await showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: Text('Speak Text using $voiceName'),
-          content: SizedBox(
-            width: 500,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Type any text below. The AI will convert this text into speech, cloned to sound exactly like the profile voice.',
-                  style: TextStyle(fontSize: 13, color: Colors.black54),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: textController,
-                  maxLines: 5,
-                  decoration: const InputDecoration(
-                    labelText: 'Text to speak',
-                    hintText: 'Enter the text you want read aloud...',
-                    border: OutlineInputBorder(),
+        builder: (ctx, setSheetState) => Container(
+          height: MediaQuery.of(ctx).size.height * 0.65,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Output Format:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Row(
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
                   children: [
-                    ChoiceChip(
-                      label: const Text('MP3 (Standard)'),
-                      selected: selectedFormat == 'mp3',
-                      onSelected: (_) => setDialogState(() => selectedFormat = 'mp3'),
+                    Text(
+                      'Generate as $voiceName',
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1E293B),
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('WAV (High Quality)'),
-                      selected: selectedFormat == 'wav',
-                      onSelected: (_) => setDialogState(() => selectedFormat = 'wav'),
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('MP4 (Video Ready)'),
-                      selected: selectedFormat == 'mp4',
-                      onSelected: (_) => setDialogState(() => selectedFormat = 'mp4'),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancel'),
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const Divider(),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: textController,
+                        maxLines: 5,
+                        decoration: const InputDecoration(
+                          labelText: 'Text to speak',
+                          hintText: 'Enter what you want read aloud...',
+                          alignLabelWithHint: true,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Output Format',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          ChoiceChip(
+                            label: const Text('MP3'),
+                            selected: selectedFormat == 'mp3',
+                            onSelected: (_) =>
+                                setSheetState(() => selectedFormat = 'mp3'),
+                          ),
+                          ChoiceChip(
+                            label: const Text('WAV'),
+                            selected: selectedFormat == 'wav',
+                            onSelected: (_) =>
+                                setSheetState(() => selectedFormat = 'wav'),
+                          ),
+                          ChoiceChip(
+                            label: const Text('MP4'),
+                            selected: selectedFormat == 'mp4',
+                            onSelected: (_) =>
+                                setSheetState(() => selectedFormat = 'mp4'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: textController.text.trim().isEmpty
+                        ? null
+                        : () async {
+                            Navigator.pop(ctx);
+                            await _generateSpeech(
+                                voiceId, textController.text, selectedFormat);
+                          },
+                    icon:
+                        const Icon(Icons.record_voice_over_rounded, size: 18),
+                    label: const Text('Generate Speech'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton.icon(
-              onPressed: textController.text.trim().isEmpty
-                  ? null
-                  : () async {
-                      Navigator.pop(ctx);
-                      await _generateSpeech(voiceId, textController.text, selectedFormat);
-                    },
-              icon: const Icon(Icons.record_voice_over),
-              label: const Text('Speak & Create File'),
-            ),
-          ],
         ),
       ),
     );
   }
 
-  Future<void> _generateSpeech(String voiceId, String text, String format) async {
+  Future<void> _generateSpeech(
+      String voiceId, String text, String format) async {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Generating speech file... This may take a moment.')),
+      const SnackBar(content: Text('Generating speech...')),
     );
 
     final result = await _voiceService.generateSpeech(
@@ -382,9 +491,9 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
       final downloadUrl = _voiceService.getDownloadUrl(result['filename']);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Speech generated successfully: ${result['filename']}'),
+          content: Text('Generated: ${result['filename']}'),
           action: SnackBarAction(
-            label: 'Download File',
+            label: 'Download',
             onPressed: () async {
               final uri = Uri.parse(downloadUrl);
               if (await canLaunchUrl(uri)) {
@@ -397,7 +506,7 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
       );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to generate speech. Verify that the AI server is running.')),
+        const SnackBar(content: Text('Failed to generate speech.')),
       );
     }
   }
@@ -406,27 +515,30 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Voice Cloning & Speech Generator'),
+        title: const Text('Voice Studio'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.help_outline),
-            tooltip: 'How to use',
+            icon: const Icon(Icons.help_outline_rounded),
+            tooltip: 'Training Guide',
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const TrainingGuideScreen()));
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const TrainingGuideScreen()));
             },
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh Status',
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh',
             onPressed: _checkServerAndLoad,
           ),
         ],
       ),
       floatingActionButton: _serverOnline
           ? FloatingActionButton.extended(
-              onPressed: _showCreateVoiceDialog,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Voice Profile'),
+              onPressed: _showCreateVoiceSheet,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add Voice'),
+              backgroundColor: const Color(0xFF6C63FF),
+              foregroundColor: Colors.white,
             )
           : null,
       body: _isLoading
@@ -434,228 +546,309 @@ class _VoiceManagerScreenState extends State<VoiceManagerScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircularProgressIndicator(),
+                  const CircularProgressIndicator(color: Color(0xFF6C63FF)),
                   const SizedBox(height: 20),
-                  Text(_isStartingServer 
-                    ? 'Starting local offline AI engine...\nThis may take a few minutes on the first launch.'
-                    : 'Loading...', 
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.black54),
+                  Text(
+                    _isStartingServer
+                        ? 'Starting AI engine...'
+                        : 'Loading...',
+                    style: GoogleFonts.inter(color: const Color(0xFF94A3B8)),
                   ),
                 ],
               ),
             )
           : !_serverOnline
-              ? Center(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.offline_bolt_outlined, size: 64, color: Colors.blueAccent),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Offline AI Engine Disconnected',
-                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'To protect your privacy, this application runs all artificial intelligence models locally on your computer. The background AI engine is not running right now.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 15, color: Colors.black54),
-                          ),
-                          const SizedBox(height: 24),
-                          if (kIsWeb)
-                            const Text(
-                              'Please run the desktop app on Windows to start and manage the offline AI engine.',
-                              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
-                              textAlign: TextAlign.center,
-                            )
-                          else
-                            ElevatedButton.icon(
-                              onPressed: _startLocalServer,
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              icon: const Icon(Icons.play_arrow),
-                              label: const Text('Launch Local AI Engine', style: TextStyle(fontSize: 16)),
-                            ),
-                          const SizedBox(height: 32),
-                          const Divider(),
-                          const SizedBox(height: 16),
-                          Theme(
-                            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                            child: ExpansionTile(
-                              title: const Center(
-                                child: Text(
-                                  'Advanced Network Settings (for Mobile)',
-                                  style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w500),
-                                ),
-                              ),
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'If you are running this app on your phone, enter the IP address of your computer where the AI engine is running:',
-                                        style: TextStyle(fontSize: 13, color: Colors.black54),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: TextField(
-                                              controller: _ipController,
-                                              decoration: const InputDecoration(
-                                                labelText: 'AI Server URL',
-                                                hintText: 'e.g., http://192.168.1.5:5050',
-                                                border: OutlineInputBorder(),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          ElevatedButton(
-                                            onPressed: _updateServerUrl,
-                                            child: const Text('Connect'),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
+              ? _buildOfflineView()
               : _voices.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.person_add, size: 64, color: Colors.black26),
-                          const SizedBox(height: 16),
-                          const Text('No voice profiles created yet.', style: TextStyle(fontSize: 18, color: Colors.black45)),
-                          const SizedBox(height: 8),
-                          const Text('Tap the button below to add a person\'s voice.', style: TextStyle(color: Colors.black38)),
-                          const SizedBox(height: 24),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const TrainingGuideScreen()));
-                            },
-                            icon: const Icon(Icons.menu_book),
-                            label: const Text('Read the Training Guide'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _voices.length,
-                      itemBuilder: (context, index) {
-                        final voice = _voices[index];
-                        final status = voice['status'] ?? 'unknown';
-                        final isReady = status == 'ready';
-                        final isTraining = status == 'training';
+                  ? _buildEmptyView()
+                  : _buildVoiceList(),
+    );
+  }
 
-                        Color statusColor = Colors.grey;
-                        String friendlyStatus = 'Not Trained';
-                        if (isReady) {
-                          statusColor = Colors.green;
-                          friendlyStatus = 'Ready to Speak';
-                        }
-                        if (isTraining) {
-                          statusColor = Colors.orange;
-                          friendlyStatus = 'Learning Voice...';
-                        }
-                        if (status.startsWith('error')) {
-                          statusColor = Colors.red;
-                          friendlyStatus = 'Error Processing';
-                        }
+  Widget _buildOfflineView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          const SizedBox(height: 40),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: const Color(0xFF6C63FF).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Icon(Icons.offline_bolt_rounded,
+                size: 40, color: Color(0xFF6C63FF)),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'AI Engine Disconnected',
+            style: GoogleFonts.inter(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'All voice cloning runs locally on your computer for maximum privacy.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: const Color(0xFF94A3B8),
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 24),
+          ConnectionStatusWidget(
+            isConnected: false,
+            serverUrl: VoiceCloneService.baseUrl,
+          ),
+          const SizedBox(height: 24),
+          if (!kIsWeb)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _startLocalServer,
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: const Text('Launch AI Engine'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+          const SizedBox(height: 12),
+          Text(
+            'Running on a phone? Go to Settings to enter your computer\'s IP address.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: const Color(0xFFCBD5E1),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const CircleAvatar(
-                                      backgroundColor: Colors.blueAccent,
-                                      child: Icon(Icons.person, color: Colors.white),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(voice['name'] ?? 'Unknown',
-                                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                          const SizedBox(height: 4),
-                                          Row(
-                                            children: [
-                                              Container(
-                                                width: 8, height: 8,
-                                                decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(friendlyStatus, style: TextStyle(color: statusColor, fontSize: 13, fontWeight: FontWeight.w500)),
-                                              const SizedBox(width: 12),
-                                              Text('${voice['sample_count'] ?? 0} voice recordings',
-                                                  style: const TextStyle(color: Colors.black54, fontSize: 13)),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                const Divider(),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    if (!isReady && !isTraining)
-                                      ElevatedButton.icon(
-                                        onPressed: () => _trainVoice(voice['id'], voice['name']),
-                                        icon: const Icon(Icons.model_training, size: 18),
-                                        label: const Text('Start Voice Learning'),
-                                      ),
-                                    if (isTraining)
-                                      const Chip(
-                                        avatar: SizedBox(
-                                          width: 16, height: 16,
-                                          child: CircularProgressIndicator(strokeWidth: 2),
-                                        ),
-                                        label: Text('Learning features in background...'),
-                                      ),
-                                    if (isReady)
-                                      ElevatedButton.icon(
-                                        onPressed: () => _showGenerateDialog(voice['id'], voice['name']),
-                                        icon: const Icon(Icons.record_voice_over, size: 18),
-                                        label: const Text('Convert Text to Speech'),
-                                      ),
-                                  ],
-                                ),
+  Widget _buildEmptyView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: const Color(0xFF6C63FF).withOpacity(0.08),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Icon(Icons.person_add_rounded,
+                size: 40, color: Color(0xFF6C63FF)),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'No voice profiles yet',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap "Add Voice" to create your first profile',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: const Color(0xFF94A3B8),
+            ),
+          ),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const TrainingGuideScreen()));
+            },
+            icon: const Icon(Icons.menu_book_rounded, size: 18),
+            label: const Text('Read Training Guide'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVoiceList() {
+    return Column(
+      children: [
+        // Connection status banner
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: ConnectionStatusWidget(
+            isConnected: true,
+            serverUrl: VoiceCloneService.baseUrl,
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _voices.length,
+            itemBuilder: (context, index) {
+              final voice = _voices[index];
+              final status = voice['status'] ?? 'unknown';
+              final isReady = status == 'ready';
+              final isTraining = status == 'training';
+              final name = voice['name'] ?? 'Unknown';
+
+              Color statusColor = const Color(0xFF94A3B8);
+              String friendlyStatus = 'Not Trained';
+              if (isReady) {
+                statusColor = const Color(0xFF10B981);
+                friendlyStatus = 'Ready';
+              }
+              if (isTraining) {
+                statusColor = const Color(0xFFF59E0B);
+                friendlyStatus = 'Learning...';
+              }
+              if (status.startsWith('error')) {
+                statusColor = const Color(0xFFEF4444);
+                friendlyStatus = 'Error';
+              }
+
+              return GlassCard(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF6C63FF),
+                                Color(0xFF8B5CF6)
                               ],
                             ),
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                        );
-                      },
+                          child: Center(
+                            child: Text(
+                              name.isNotEmpty
+                                  ? name[0].toUpperCase()
+                                  : '?',
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF1E293B),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: statusColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    friendlyStatus,
+                                    style: GoogleFonts.inter(
+                                      color: statusColor,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    '${voice['sample_count'] ?? 0} samples',
+                                    style: GoogleFonts.inter(
+                                      color: const Color(0xFF94A3B8),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 14),
+                    const Divider(height: 1),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (!isReady && !isTraining)
+                          ElevatedButton.icon(
+                            onPressed: () =>
+                                _trainVoice(voice['id'], name),
+                            icon: const Icon(Icons.model_training_rounded,
+                                size: 16),
+                            label: const Text('Train'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 10),
+                            ),
+                          ),
+                        if (isTraining)
+                          Chip(
+                            avatar: const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFFF59E0B)),
+                            ),
+                            label: Text('Learning...',
+                                style: GoogleFonts.inter(fontSize: 12)),
+                          ),
+                        if (isReady)
+                          ElevatedButton.icon(
+                            onPressed: () =>
+                                _showGenerateSheet(voice['id'], name),
+                            icon: const Icon(
+                                Icons.record_voice_over_rounded,
+                                size: 16),
+                            label: const Text('Generate Speech'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 10),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

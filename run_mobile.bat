@@ -51,6 +51,38 @@ if %SDK_FOUND%==0 (
 echo Android SDK detected at: %SDK_PATH%
 echo.
 
+REM 1b. Check for SDK Command-line Tools
+if not exist "%SDK_PATH%\cmdline-tools" (
+    echo ============================================================
+    echo   [ERROR] Android SDK Command-line Tools are missing
+    echo ============================================================
+    echo.
+    echo To fix this:
+    echo   1. Open Android Studio.
+    echo   2. In the opening window, click "More Actions" -> "SDK Manager"
+    echo      (or if a project is open, go to Tools -> SDK Manager).
+    echo   3. Click the "SDK Tools" tab (next to SDK Platforms).
+    echo   4. Check the box for "Android SDK Command-line Tools (latest)".
+    echo   5. Click "Apply" / "OK" and let the download finish.
+    echo.
+    echo Once completed, close Android Studio and run this script again.
+    echo.
+    pause
+    goto :eof
+)
+
+REM 1c. Verify Android Licenses
+if not exist "%SDK_PATH%\licenses" (
+    echo ============================================================
+    echo   [INFO] Setting up Android Licenses
+    echo ============================================================
+    echo.
+    echo Please press "y" and Enter for each prompt to accept the licenses.
+    echo.
+    call flutter doctor --android-licenses
+    echo.
+)
+
 REM 2. Check for connected mobile devices
 echo Checking connected devices...
 echo.

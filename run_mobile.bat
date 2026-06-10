@@ -6,6 +6,11 @@ echo   OmniScribe AI Mobile Deployment
 echo ============================================================
 echo.
 
+REM Start the server in the background
+echo Starting local AI background services on this laptop...
+start "OmniScribe AI Server" /min cmd /c "cd voice_server && run_server.bat"
+echo.
+
 REM 1. Check for Android SDK
 set SDK_FOUND=0
 if exist "%LOCALAPPDATA%\Android\Sdk" (

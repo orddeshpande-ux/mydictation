@@ -83,29 +83,7 @@ class DictationBloc extends Bloc<DictationEvent, DictationState> {
     emit(state.copyWith(status: DictationStatus.processing));
     try {
       final responseStr = await _domainService.reviewTranscript(state.transcript, event.mode);
-      
-      // Parse JSON
-      List<Insight> newInsights = [];
-      try {
-        final parsed = jsonDecode(responseStr) as List;
-        for (var item in parsed) {
-          if (item is Map) {
-            newInsights.add(Insight(
-              title: item['title'] ?? 'Insight',
-              message: item['message'] ?? '',
-              type: item['type'] ?? 'info',
-            ));
-          }
-        }
-      } catch (e) {
-        // Fallback if model fails to output valid JSON
-        newInsights.add(Insight(
-          title: 'Analysis Result',
-          message: responseStr,
-          type: 'info',
-        ));
-      }
-      
+      final newInsights = _parseInsights(responseStr);
       emit(state.copyWith(insights: newInsights, status: DictationStatus.idle));
     } catch (e) {
       emit(state.copyWith(status: DictationStatus.idle, errorMessage: e.toString()));
@@ -131,32 +109,49 @@ class DictationBloc extends Bloc<DictationEvent, DictationState> {
     // Step 2: Generate insights
     try {
       final responseStr = await _domainService.reviewTranscript(currentText, event.mode);
-      
-      // Parse JSON
-      List<Insight> newInsights = [];
-      try {
-        final parsed = jsonDecode(responseStr) as List;
-        for (var item in parsed) {
-          if (item is Map) {
-            newInsights.add(Insight(
-              title: item['title'] ?? 'Insight',
-              message: item['message'] ?? '',
-              type: item['type'] ?? 'info',
-            ));
-          }
-        }
-      } catch (e) {
-        // Fallback if model fails to output valid JSON
-        newInsights.add(Insight(
-          title: 'Analysis Result',
-          message: responseStr,
-          type: 'info',
-        ));
-      }
-      
+      final newInsights = _parseInsights(responseStr);
       emit(state.copyWith(insights: newInsights, status: DictationStatus.idle));
     } catch (e) {
       emit(state.copyWith(status: DictationStatus.idle, errorMessage: e.toString()));
     }
+  }
+
+  /// Parses the raw LLM response string into a list of [Insight] objects.
+  /// Automatically strips markdown code block wrappers (e.g. ```json ... ```) 
+  /// before parsing to handle cases where the local model formats its output as markdown.
+  List<Insight> _parseInsights(String responseStr) {
+    String cleanedJson = responseStr.trim();
+    if (cleanedJson.startsWith('```')) {
+      final lines = cleanedJson.split('\n');
+      if (lines.first.startsWith('```')) {
+        lines.removeAt(0);
+      }
+      if (lines.isNotEmpty && lines.last.startsWith('```')) {
+        lines.removeLast();
+      }
+      cleanedJson = lines.join('\n').trim();
+    }
+
+    List<Insight> newInsights = [];
+    try {
+      final parsed = jsonDecode(cleanedJson) as List;
+      for (var item in parsed) {
+        if (item is Map) {
+          newInsights.add(Insight(
+            title: item['title'] ?? 'Insight',
+            message: item['message'] ?? '',
+            type: item['type'] ?? 'info',
+          ));
+        }
+      }
+    } catch (e) {
+      // Fallback if model fails to output valid JSON
+      newInsights.add(Insight(
+        title: 'Analysis Result',
+        message: responseStr,
+        type: 'info',
+      ));
+    }
+    return newInsights;
   }
 }

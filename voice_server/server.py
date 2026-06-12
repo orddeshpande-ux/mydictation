@@ -318,6 +318,7 @@ def get_llm_pipeline():
     global llm_pipeline
     if llm_pipeline is None:
         import os
+        import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
         
         # Determine the model path (check for local fine-tuned first, fallback to base)
@@ -331,8 +332,19 @@ def get_llm_pipeline():
         print(f"Loading local LLM model from: {model_path}...")
         try:
             tokenizer = AutoTokenizer.from_pretrained(model_path)
-            model = AutoModelForCausalLM.from_pretrained(model_path)
-            llm_pipeline = pipeline("text-generation", model=model, tokenizer=tokenizer)
+            
+            # Determine target device and torch dtype to prevent NaN/inf overflows on CPU
+            if torch.cuda.is_available():
+                device = 0
+                dtype = torch.float16
+                print("CUDA is available. Loading LLM model in float16 on GPU...")
+            else:
+                device = -1
+                dtype = torch.float32
+                print("CUDA is not available. Loading LLM model in float32 on CPU to prevent NaNs...")
+                
+            model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=dtype)
+            llm_pipeline = pipeline("text-generation", model=model, tokenizer=tokenizer, device=device)
             print("Local LLM model loaded successfully.")
         except Exception as e:
             print(f"Failed to load LLM model: {e}")

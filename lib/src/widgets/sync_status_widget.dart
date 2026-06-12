@@ -7,17 +7,21 @@ import 'package:omniscribe_ai/src/sync/sync_manager.dart';
 /// Shows a small animated bar at the top of the screen when the sync manager
 /// is discovering peers or actively syncing.  Disappears when idle.
 class SyncStatusWidget extends StatelessWidget {
-  final SyncManager syncManager;
+  final SyncManager? syncManager;
 
-  const SyncStatusWidget({super.key, required this.syncManager});
+  const SyncStatusWidget({super.key, this.syncManager});
 
   @override
   Widget build(BuildContext context) {
+    final manager = syncManager;
+    if (manager == null) {
+      return const SizedBox.shrink();
+    }
     return ListenableBuilder(
-      listenable: syncManager,
+      listenable: manager,
       builder: (context, _) {
         final showBar =
-            syncManager.isDiscovering || syncManager.isSyncing;
+            manager.isDiscovering || manager.isSyncing;
 
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
@@ -29,15 +33,15 @@ class SyncStatusWidget extends StatelessWidget {
             child: child,
           ),
           child: showBar
-              ? _buildBar(context)
+              ? _buildBar(context, manager)
               : const SizedBox.shrink(key: ValueKey('hidden')),
         );
       },
     );
   }
 
-  Widget _buildBar(BuildContext context) {
-    final isSyncing = syncManager.isSyncing;
+  Widget _buildBar(BuildContext context, SyncManager manager) {
+    final isSyncing = manager.isSyncing;
 
     return Container(
       key: const ValueKey('visible'),
@@ -71,9 +75,9 @@ class SyncStatusWidget extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Text(
-            syncManager.statusText.isNotEmpty
-                ? syncManager.statusText
-                : (syncManager.isDiscovering
+            manager.statusText.isNotEmpty
+                ? manager.statusText
+                : (manager.isDiscovering
                     ? 'Looking for devices on Wi‑Fi…'
                     : 'Syncing…'),
             style: GoogleFonts.inter(

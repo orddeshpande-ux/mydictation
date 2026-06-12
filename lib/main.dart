@@ -10,7 +10,7 @@ import 'package:omniscribe_ai/src/services/secure_storage_service.dart';
 import 'package:omniscribe_ai/src/sync/sync_manager.dart';
 
 /// Global sync manager – initialised once in main() and shared app‑wide.
-late final SyncManager syncManager;
+SyncManager? syncManager;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +20,7 @@ void main() async {
 
   // Initialise automatic Wi‑Fi sync (zero user configuration)
   syncManager = SyncManager();
-  await syncManager.initialize();
+  await syncManager!.initialize();
 
   bool seenOnboarding = false;
   try {

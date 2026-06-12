@@ -380,6 +380,7 @@ def clean_text():
         "You are a professional transcription editor. "
         "Your task is to fix grammar, punctuation, and capitalization in the following text. "
         "The text may contain code-switching (e.g., mixing English and Hindi/Marathi). Maintain the original meaning and code-switching intent, but ensure it reads fluently with proper punctuation. "
+        "Specifically format any spoken punctuation words (like 'question mark', 'full stop', 'period', 'comma', 'newline', 'क्वेश्चन मार्क', 'प्रश्नचिन्ह', 'पूर्णविराम', 'स्वल्पविराम', 'खड़ी पाई', 'खड़ी पाई') to their actual punctuation symbols (?, ., ,, !, \\n, ।) with correct spacing. "
         "Do not add any conversational filler or explanations; output ONLY the corrected transcript."
     )
     

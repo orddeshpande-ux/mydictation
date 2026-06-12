@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,8 +20,10 @@ void main() async {
   await VoiceCloneService.autoStartServer();
 
   // Initialise automatic Wi‑Fi sync (zero user configuration)
-  syncManager = SyncManager();
-  await syncManager!.initialize();
+  if (!kIsWeb) {
+    syncManager = SyncManager();
+    await syncManager!.initialize();
+  }
 
   bool seenOnboarding = false;
   try {

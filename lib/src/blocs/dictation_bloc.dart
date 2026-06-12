@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:omniscribe_ai/src/models/domain_mode.dart';
 import 'package:omniscribe_ai/src/services/domain_service.dart';
 import 'package:omniscribe_ai/src/services/stt_service.dart';
+import 'package:omniscribe_ai/src/utils/punctuation_formatter.dart';
 
 part 'dictation_event.dart';
 part 'dictation_state.dart';
@@ -52,7 +53,8 @@ class DictationBloc extends Bloc<DictationEvent, DictationState> {
   }
 
   void _onUpdateTranscript(UpdateTranscript event, Emitter<DictationState> emit) {
-    emit(state.copyWith(transcript: event.transcript, status: DictationStatus.listening));
+    final formatted = PunctuationFormatter.format(event.transcript);
+    emit(state.copyWith(transcript: formatted, status: DictationStatus.listening));
   }
 
   void _onDictationErrorOccurred(DictationErrorOccurred event, Emitter<DictationState> emit) {

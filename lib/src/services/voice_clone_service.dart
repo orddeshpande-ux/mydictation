@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class VoiceCloneService {
-  static const String _defaultUrl = 'http://localhost:5050';
+  static const String _defaultUrl = 'http://127.0.0.1:5050';
   static String _baseUrl = _defaultUrl;
   final http.Client _client;
 
@@ -137,8 +137,8 @@ class VoiceCloneService {
       return;
     }
 
-    // Only launch local server if we are on Windows and referencing localhost
-    if (Platform.isWindows && _baseUrl.contains('localhost')) {
+    // Only launch local server if we are on Windows and referencing localhost or 127.0.0.1
+    if (Platform.isWindows && (_baseUrl.contains('localhost') || _baseUrl.contains('127.0.0.1'))) {
       print('VoiceCloneService: Attempting to launch local voice server in the background...');
       try {
         final dir = Directory('voice_server');

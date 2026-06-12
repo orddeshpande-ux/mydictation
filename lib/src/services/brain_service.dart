@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BrainService {
-  static const String _defaultUrl = 'http://localhost:5050';
+  static const String _defaultUrl = 'http://127.0.0.1:5050';
   final http.Client _client;
 
   BrainService({http.Client? client}) : _client = client ?? http.Client();

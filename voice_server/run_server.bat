@@ -8,7 +8,7 @@ echo.
 echo [INFO] Stopping any running server instances on port 5050...
 for /f "tokens=5" %%i in ('netstat -aon ^| findstr :5050') do (
     taskkill /F /PID %%i >nul 2>nul
-    echo [INFO] Killed existing instance (PID: %%i).
+    echo [INFO] Killed existing instance (PID: %%i)
 )
 echo.
 
@@ -22,9 +22,9 @@ if %errorlevel% equ 0 (
     )
     echo [INFO] Installing/updating dependencies...
     uv pip install -r requirements.txt
-    echo.
+    echo:
     echo Starting server on http://localhost:5050 ...
-    .venv\Scripts\python.exe server.py
+    ".venv\Scripts\python.exe" server.py
     goto :end
 )
 
@@ -32,11 +32,11 @@ REM Fallback if uv is not installed
 where python >nul 2>nul
 if %errorlevel% neq 0 (
     echo [ERROR] Python is not installed on your system PATH and uv was not found.
-    echo.
+    echo:
     echo To fix this, please run:
     echo   uv python install
     echo Or install Python 3.10 from https://www.python.org/
-    echo.
+    echo:
     pause
     goto :eof
 )

@@ -427,10 +427,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         context
                             .read<DictationBloc>()
                             .add(UpdateTranscript(_controller.text));
-                        context.read<DictationBloc>().add(CleanTranscription());
                         context
                             .read<DictationBloc>()
-                            .add(GenerateInsights(_selectedMode));
+                            .add(CleanAndGenerateInsights(_selectedMode));
                       },
               ),
               const SizedBox(width: 4),
@@ -473,10 +472,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () async {
                   if (isListening) {
                     context.read<DictationBloc>().add(StopDictation());
-                    context.read<DictationBloc>().add(CleanTranscription());
                     context
                         .read<DictationBloc>()
-                        .add(GenerateInsights(_selectedMode));
+                        .add(CleanAndGenerateInsights(_selectedMode));
                   } else {
                     final hasPerms = await _checkPermissions();
                     if (hasPerms && mounted) {
@@ -822,10 +820,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPressed: () {
                     if (isListening) {
                       context.read<DictationBloc>().add(StopDictation());
-                      context.read<DictationBloc>().add(CleanTranscription());
                       context
                           .read<DictationBloc>()
-                          .add(GenerateInsights(_selectedMode));
+                          .add(CleanAndGenerateInsights(_selectedMode));
                     } else {
                       context.read<DictationBloc>().add(
                           StartDictation(localeId: _selectedLocale));
@@ -847,10 +844,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               .add(UpdateTranscript(_controller.text));
                           context
                               .read<DictationBloc>()
-                              .add(CleanTranscription());
-                          context
-                              .read<DictationBloc>()
-                              .add(GenerateInsights(_selectedMode));
+                              .add(CleanAndGenerateInsights(_selectedMode));
                         },
                   icon: const Icon(Icons.auto_fix_high, size: 18),
                   label: const Text('Analyze'),

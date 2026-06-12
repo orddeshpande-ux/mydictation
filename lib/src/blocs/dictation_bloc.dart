@@ -22,6 +22,7 @@ class DictationBloc extends Bloc<DictationEvent, DictationState> {
     on<GenerateInsights>(_onGenerateInsights);
     on<UpdateTranscript>(_onUpdateTranscript);
     on<DictationErrorOccurred>(_onDictationErrorOccurred);
+    on<CleanAndGenerateInsights>(_onCleanAndGenerateInsights);
   }
 
   Future<void> _onStartDictation(StartDictation event, Emitter<DictationState> emit) async {
@@ -80,6 +81,54 @@ class DictationBloc extends Bloc<DictationEvent, DictationState> {
     emit(state.copyWith(status: DictationStatus.processing));
     try {
       final responseStr = await _domainService.reviewTranscript(state.transcript, event.mode);
+      
+      // Parse JSON
+      List<Insight> newInsights = [];
+      try {
+        final parsed = jsonDecode(responseStr) as List;
+        for (var item in parsed) {
+          if (item is Map) {
+            newInsights.add(Insight(
+              title: item['title'] ?? 'Insight',
+              message: item['message'] ?? '',
+              type: item['type'] ?? 'info',
+            ));
+          }
+        }
+      } catch (e) {
+        // Fallback if model fails to output valid JSON
+        newInsights.add(Insight(
+          title: 'Analysis Result',
+          message: responseStr,
+          type: 'info',
+        ));
+      }
+      
+      emit(state.copyWith(insights: newInsights, status: DictationStatus.idle));
+    } catch (e) {
+      emit(state.copyWith(status: DictationStatus.idle, errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> _onCleanAndGenerateInsights(CleanAndGenerateInsights event, Emitter<DictationState> emit) async {
+    if (state.transcript.trim().isEmpty) return;
+
+    emit(state.copyWith(status: DictationStatus.processing, errorMessage: ''));
+
+    String currentText = state.transcript;
+    
+    // Step 1: Clean transcript
+    try {
+      currentText = await _domainService.cleanTranscript(currentText);
+      emit(state.copyWith(transcript: currentText, status: DictationStatus.processing));
+    } catch (e) {
+      print('Clean error: $e');
+      // Fallback: continue with original text if cleaning fails
+    }
+
+    // Step 2: Generate insights
+    try {
+      final responseStr = await _domainService.reviewTranscript(currentText, event.mode);
       
       // Parse JSON
       List<Insight> newInsights = [];

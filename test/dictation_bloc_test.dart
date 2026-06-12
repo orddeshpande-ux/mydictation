@@ -128,5 +128,20 @@ void main() {
       expect(bloc.state.status, DictationStatus.error);
       expect(bloc.state.errorMessage, 'error code 123');
     });
+
+    test('CleanAndGenerateInsights sequentially cleans and analyzes transcript', () async {
+      bloc.add(const UpdateTranscript('dirty text'));
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      bloc.add(const CleanAndGenerateInsights(DomainMode.legal));
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      expect(domainService.cleanCalled, true);
+      expect(domainService.reviewCalled, true);
+      expect(bloc.state.transcript, 'Cleaned Text');
+      expect(bloc.state.insights.length, 1);
+      expect(bloc.state.insights[0].title, 'Test Title');
+      expect(bloc.state.status, DictationStatus.idle);
+    });
   });
 }

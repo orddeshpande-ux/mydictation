@@ -47,3 +47,12 @@ class DictationErrorOccurred extends DictationEvent {
   List<Object?> get props => [errorMessage];
 }
 
+class CleanAndGenerateInsights extends DictationEvent {
+  final DomainMode mode;
+
+  const CleanAndGenerateInsights(this.mode);
+
+  @override
+  List<Object?> get props => [mode];
+}
+

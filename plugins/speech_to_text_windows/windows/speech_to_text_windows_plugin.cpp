@@ -127,7 +127,10 @@ void SpeechToTextWindowsPlugin::DispatchToUIThread(Callback&& callback) {
   
   HWND hwnd = nullptr;
   if (m_registrar && m_registrar->GetView()) {
-    hwnd = m_registrar->GetView()->GetNativeWindow();
+    HWND child_hwnd = m_registrar->GetView()->GetNativeWindow();
+    if (child_hwnd) {
+      hwnd = GetAncestor(child_hwnd, GA_ROOT);
+    }
   }
   
   if (hwnd && PostMessage(hwnd, WM_DISPATCH_TO_UI_THREAD, reinterpret_cast<WPARAM>(callback_ptr), 0)) {

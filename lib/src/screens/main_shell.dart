@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:omniscribe_ai/main.dart' show syncManager;
 import 'package:omniscribe_ai/src/screens/home_screen.dart';
 import 'package:omniscribe_ai/src/screens/voice_manager_screen.dart';
 import 'package:omniscribe_ai/src/screens/history_screen.dart';
 import 'package:omniscribe_ai/src/screens/settings_screen.dart';
+import 'package:omniscribe_ai/src/widgets/sync_status_widget.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -27,15 +29,24 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
+      body: Column(
         children: [
-          HomeScreen(pendingTranscript: _pendingTranscript, onTranscriptConsumed: () {
-            setState(() => _pendingTranscript = null);
-          }),
-          const VoiceManagerScreen(),
-          HistoryScreen(onLoadTranscript: _onLoadTranscript),
-          const SettingsScreen(),
+          // Sync status bar (auto-hides when not syncing)
+          SyncStatusWidget(syncManager: syncManager),
+          // Main content
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: [
+                HomeScreen(pendingTranscript: _pendingTranscript, onTranscriptConsumed: () {
+                  setState(() => _pendingTranscript = null);
+                }),
+                const VoiceManagerScreen(),
+                HistoryScreen(onLoadTranscript: _onLoadTranscript),
+                const SettingsScreen(),
+              ],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: Container(

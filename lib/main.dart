@@ -7,12 +7,20 @@ import 'package:omniscribe_ai/app.dart';
 import 'package:omniscribe_ai/src/blocs/dictation_bloc.dart';
 import 'package:omniscribe_ai/src/services/voice_clone_service.dart';
 import 'package:omniscribe_ai/src/services/secure_storage_service.dart';
+import 'package:omniscribe_ai/src/sync/sync_manager.dart';
+
+/// Global sync manager – initialised once in main() and shared app‑wide.
+late final SyncManager syncManager;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Launch the local server in the background (no-op if already running or not on Windows)
   await VoiceCloneService.autoStartServer();
+
+  // Initialise automatic Wi‑Fi sync (zero user configuration)
+  syncManager = SyncManager();
+  await syncManager.initialize();
 
   bool seenOnboarding = false;
   try {

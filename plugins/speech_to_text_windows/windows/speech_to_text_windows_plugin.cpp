@@ -80,7 +80,9 @@ SpeechToTextWindowsPlugin::SpeechToTextWindowsPlugin()
   , m_cpAudio(nullptr)
   , m_initialized(false)
   , m_listening(false)
-  , m_window_proc_id(-1) {
+  , m_window_proc_id(-1)
+  , m_currentSessionId(0)
+  , m_currentLocaleId(L"") {
   std::cout << "SpeechToTextWindowsPlugin created" << std::endl;
   CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 }
@@ -95,9 +97,38 @@ SpeechToTextWindowsPlugin::~SpeechToTextWindowsPlugin() {
   
   std::lock_guard<std::mutex> lock(m_mutex);
   
-  if (m_listening) {
-    Stop(nullptr);
+  ShutdownSapi();
+  
+  CoUninitialize();
+}
+
+// Helper to convert wide string to UTF-8 std::string for logging
+static std::string WideToNarrow(const std::wstring& wstr) {
+  if (wstr.empty()) return "";
+  int size = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
+  if (size <= 0) return "";
+  std::string str(size - 1, '\0');
+  WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, &str[0], size, nullptr, nullptr);
+  return str;
+}
+
+std::wstring SpeechToTextWindowsPlugin::GetLcidHex(const std::wstring& localeId) {
+  if (localeId == L"mr_IN" || localeId == L"mr-IN" || localeId == L"mr") {
+    return L"44e";
+  } else if (localeId == L"hi_IN" || localeId == L"hi-IN" || localeId == L"hi") {
+    return L"439";
+  } else if (localeId == L"en_IN" || localeId == L"en-IN") {
+    return L"4009";
+  } else if (localeId == L"en_GB" || localeId == L"en-GB") {
+    return L"809";
+  } else if (localeId == L"en_US" || localeId == L"en-US" || localeId == L"en") {
+    return L"409";
   }
+  return L"";
+}
+
+void SpeechToTextWindowsPlugin::ShutdownSapi() {
+  m_listening = false;
   
   if (m_cpRecoGrammar) {
     m_cpRecoGrammar->Release();
@@ -116,7 +147,108 @@ SpeechToTextWindowsPlugin::~SpeechToTextWindowsPlugin() {
     m_cpAudio = nullptr;
   }
   
-  CoUninitialize();
+  m_initialized = false;
+  std::cout << "SAPI shut down completed" << std::endl;
+}
+
+bool SpeechToTextWindowsPlugin::InitializeSapi(const std::wstring& localeId) {
+  if (m_initialized) {
+    return true;
+  }
+
+  std::cout << "Initializing SAPI speech recognition for locale: " << WideToNarrow(localeId) << std::endl;
+
+  HRESULT hr = S_OK;
+
+  // Create a recognition engine
+  hr = CoCreateInstance(CLSID_SpInprocRecognizer, NULL, CLSCTX_INPROC_SERVER, 
+                       IID_ISpRecognizer, (void**)&m_cpRecognizer);
+  if (FAILED(hr)) {
+    std::cout << "Failed to create speech recognizer. HRESULT: " << std::hex << hr << std::endl;
+    return false;
+  }
+
+  // Look up matching engine token if locale is specified
+  std::wstring lcidHex = GetLcidHex(localeId);
+  ISpObjectToken* pToken = nullptr;
+  if (!lcidHex.empty()) {
+    ISpObjectTokenCategory* pCategory = nullptr;
+    hr = CoCreateInstance(CLSID_SpObjectTokenCategory, NULL, CLSCTX_INPROC_SERVER,
+                         IID_ISpObjectTokenCategory, (void**)&pCategory);
+    if (SUCCEEDED(hr)) {
+      hr = pCategory->SetId(SPCAT_RECOGNIZERS, FALSE);
+      if (SUCCEEDED(hr)) {
+        IEnumSpObjectTokens* pEnum = nullptr;
+        std::wstring filter = L"Language=" + lcidHex;
+        hr = pCategory->EnumTokens(filter.c_str(), NULL, &pEnum);
+        if (SUCCEEDED(hr) && pEnum) {
+          ULONG fetched = 0;
+          if (pEnum->Next(1, &pToken, &fetched) == S_OK && pToken) {
+            std::cout << "Found recognizer engine for LCID: " << WideToNarrow(lcidHex) << std::endl;
+          } else {
+            std::cout << "No engine found for LCID: " << WideToNarrow(lcidHex) << ", falling back to default recognizer" << std::endl;
+          }
+          pEnum->Release();
+        }
+      }
+      pCategory->Release();
+    }
+  }
+
+  // Set selected recognizer engine (or NULL for default)
+  if (pToken) {
+    hr = m_cpRecognizer->SetRecognizer(pToken);
+    pToken->Release();
+    if (FAILED(hr)) {
+      std::cout << "Failed to set custom recognizer engine. HRESULT: " << std::hex << hr << std::endl;
+    }
+  }
+
+  // Create default audio input
+  hr = CoCreateInstance(CLSID_SpMMAudioIn, NULL, CLSCTX_INPROC_SERVER,
+                       IID_ISpAudio, (void**)&m_cpAudio);
+  if (FAILED(hr)) {
+    std::cout << "Failed to create audio input. HRESULT: " << std::hex << hr << std::endl;
+    ShutdownSapi();
+    return false;
+  }
+
+  // Set the audio input to our recognizer
+  hr = m_cpRecognizer->SetInput(m_cpAudio, TRUE);
+  if (FAILED(hr)) {
+    std::cout << "Failed to set audio input. HRESULT: " << std::hex << hr << std::endl;
+    ShutdownSapi();
+    return false;
+  }
+
+  // Create a recognition context
+  hr = m_cpRecognizer->CreateRecoContext(&m_cpRecoContext);
+  if (FAILED(hr)) {
+    std::cout << "Failed to create recognition context. HRESULT: " << std::hex << hr << std::endl;
+    ShutdownSapi();
+    return false;
+  }
+
+  // Create a grammar
+  hr = m_cpRecoContext->CreateGrammar(0, &m_cpRecoGrammar);
+  if (FAILED(hr)) {
+    std::cout << "Failed to create grammar. HRESULT: " << std::hex << hr << std::endl;
+    ShutdownSapi();
+    return false;
+  }
+
+  // Enable dictation grammar
+  hr = m_cpRecoGrammar->LoadDictation(NULL, SPLO_STATIC);
+  if (FAILED(hr)) {
+    std::cout << "Failed to load dictation grammar. HRESULT: " << std::hex << hr << std::endl;
+    ShutdownSapi();
+    return false;
+  }
+
+  m_currentLocaleId = localeId;
+  m_initialized = true;
+  std::cout << "SAPI speech recognition initialized successfully!" << std::endl;
+  return true;
 }
 
 // Template implementation for thread-safe dispatch to UI thread
@@ -172,75 +304,8 @@ void SpeechToTextWindowsPlugin::Initialize(
   
   std::lock_guard<std::mutex> lock(m_mutex);
   
-  if (m_initialized) {
-    std::cout << "Already initialized" << std::endl;
-    result->Success(flutter::EncodableValue(true));
-    return;
-  }
-
-  std::cout << "Initializing SAPI speech recognition..." << std::endl;
-
-  try {
-    HRESULT hr = S_OK;
-
-    // Create a recognition engine
-    hr = CoCreateInstance(CLSID_SpInprocRecognizer, NULL, CLSCTX_INPROC_SERVER, 
-                         IID_ISpRecognizer, (void**)&m_cpRecognizer);
-    if (FAILED(hr)) {
-      std::cout << "Failed to create speech recognizer. HRESULT: " << std::hex << hr << std::endl;
-      result->Success(flutter::EncodableValue(false));
-      return;
-    }
-
-    // Create default audio input
-    hr = CoCreateInstance(CLSID_SpMMAudioIn, NULL, CLSCTX_INPROC_SERVER,
-                         IID_ISpAudio, (void**)&m_cpAudio);
-    if (FAILED(hr)) {
-      std::cout << "Failed to create audio input. HRESULT: " << std::hex << hr << std::endl;
-      result->Success(flutter::EncodableValue(false));
-      return;
-    }
-
-    // Set the audio input to our recognizer
-    hr = m_cpRecognizer->SetInput(m_cpAudio, TRUE);
-    if (FAILED(hr)) {
-      std::cout << "Failed to set audio input. HRESULT: " << std::hex << hr << std::endl;
-      result->Success(flutter::EncodableValue(false));
-      return;
-    }
-
-    // Create a recognition context
-    hr = m_cpRecognizer->CreateRecoContext(&m_cpRecoContext);
-    if (FAILED(hr)) {
-      std::cout << "Failed to create recognition context. HRESULT: " << std::hex << hr << std::endl;
-      result->Success(flutter::EncodableValue(false));
-      return;
-    }
-
-    // Create a grammar
-    hr = m_cpRecoContext->CreateGrammar(0, &m_cpRecoGrammar);
-    if (FAILED(hr)) {
-      std::cout << "Failed to create grammar. HRESULT: " << std::hex << hr << std::endl;
-      result->Success(flutter::EncodableValue(false));
-      return;
-    }
-
-    // Enable dictation grammar
-    hr = m_cpRecoGrammar->LoadDictation(NULL, SPLO_STATIC);
-    if (FAILED(hr)) {
-      std::cout << "Failed to load dictation grammar. HRESULT: " << std::hex << hr << std::endl;
-      result->Success(flutter::EncodableValue(false));
-      return;
-    }
-
-    m_initialized = true;
-    std::cout << "SAPI speech recognition initialized successfully!" << std::endl;
-    result->Success(flutter::EncodableValue(true));
-
-  } catch (...) {
-    std::cout << "Exception during initialization" << std::endl;
-    result->Success(flutter::EncodableValue(false));
-  }
+  bool success = InitializeSapi(L"");
+  result->Success(flutter::EncodableValue(success));
 }
 
 void SpeechToTextWindowsPlugin::Listen(
@@ -249,7 +314,33 @@ void SpeechToTextWindowsPlugin::Listen(
   
   std::lock_guard<std::mutex> lock(m_mutex);
   
-  if (!m_initialized || !m_cpRecoGrammar) {
+  // Extract localeId from method arguments
+  std::wstring requestedLocale = L"";
+  const auto* arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
+  if (arguments) {
+    auto locale_it = arguments->find(flutter::EncodableValue("localeId"));
+    if (locale_it != arguments->end() && std::holds_alternative<std::string>(locale_it->second)) {
+      std::string localeStr = std::get<std::string>(locale_it->second);
+      requestedLocale = std::wstring(localeStr.begin(), localeStr.end());
+    }
+  }
+
+  // Reinitialize SAPI if language changes
+  if (m_initialized && requestedLocale != m_currentLocaleId) {
+    std::cout << "Locale changed from " << WideToNarrow(m_currentLocaleId) 
+              << " to " << WideToNarrow(requestedLocale) << ". Reinitializing SAPI..." << std::endl;
+    ShutdownSapi();
+  }
+
+  if (!m_initialized) {
+    bool success = InitializeSapi(requestedLocale);
+    if (!success) {
+      result->Error("INITIALIZATION_FAILED", "Failed to initialize SAPI speech recognition with requested locale");
+      return;
+    }
+  }
+
+  if (!m_cpRecoGrammar) {
     std::cout << "Speech recognition not initialized" << std::endl;
     result->Error("NOT_INITIALIZED", "Speech recognition not initialized");
     return;
@@ -273,19 +364,25 @@ void SpeechToTextWindowsPlugin::Listen(
     }
 
     m_listening = true;
+    m_currentSessionId++;
+    int sessionId = m_currentSessionId;
+    
     SendStatus("listening");
-    std::cout << "Speech recognition listening started!" << std::endl;
+    std::cout << "Speech recognition listening started for session: " << sessionId << std::endl;
     result->Success(flutter::EncodableValue(true));
 
     // Start recognition thread
-    std::thread([this]() {
-      std::cout << "Recognition thread started" << std::endl;
+    std::thread([this, sessionId, cpRecoContext = m_cpRecoContext, cpRecoGrammar = m_cpRecoGrammar]() {
+      std::cout << "Recognition thread started for session: " << sessionId << std::endl;
+      
+      if (cpRecoContext) cpRecoContext->AddRef();
+      if (cpRecoGrammar) cpRecoGrammar->AddRef();
       
       SPEVENT event;
       ULONG fetched = 0;
       
-      while (m_listening && m_cpRecoContext) {
-        HRESULT hr = m_cpRecoContext->GetEvents(1, &event, &fetched);
+      while (m_listening && m_currentSessionId == sessionId) {
+        HRESULT hr = cpRecoContext->GetEvents(1, &event, &fetched);
         
         if (SUCCEEDED(hr) && fetched > 0) {
           std::cout << "Speech event received. Event ID: " << event.eEventId << std::endl;
@@ -355,7 +452,10 @@ void SpeechToTextWindowsPlugin::Listen(
         Sleep(50); // Small delay to prevent busy waiting
       }
       
-      std::cout << "Recognition thread ended" << std::endl;
+      if (cpRecoContext) cpRecoContext->Release();
+      if (cpRecoGrammar) cpRecoGrammar->Release();
+      
+      std::cout << "Recognition thread ended for session: " << sessionId << std::endl;
     }).detach();
 
   } catch (...) {

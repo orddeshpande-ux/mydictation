@@ -43,6 +43,10 @@ class SpeechToTextWindowsPlugin : public flutter::Plugin {
   template<typename Callback>
   void DispatchToUIThread(Callback&& callback);
 
+  bool InitializeSapi(const std::wstring& localeId);
+  void ShutdownSapi();
+  std::wstring GetLcidHex(const std::wstring& localeId);
+
   // SAPI Speech Recognition objects
   ISpRecognizer* m_cpRecognizer;
   ISpRecoContext* m_cpRecoContext;
@@ -52,6 +56,8 @@ class SpeechToTextWindowsPlugin : public flutter::Plugin {
   std::mutex m_mutex;
   bool m_initialized;
   bool m_listening;
+  int m_currentSessionId;
+  std::wstring m_currentLocaleId;
 
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> m_channel;
   flutter::PluginRegistrarWindows* m_registrar;

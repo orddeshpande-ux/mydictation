@@ -146,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
             // Domain chips + language
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: _buildModeSelector(),
+              child: _buildModeSelector(state),
             ),
 
             // Text editor
@@ -297,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildModeSelector() {
+  Widget _buildModeSelector(DictationState state) {
     return Row(
       children: [
         Expanded(
@@ -366,7 +366,18 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
               onChanged: (value) {
                 if (value != null) {
+                  final wasDictating = state.isDictating;
                   setState(() => _selectedLocale = value);
+                  if (wasDictating) {
+                    context.read<DictationBloc>().add(StopDictation());
+                    Future.delayed(const Duration(milliseconds: 300), () {
+                      if (mounted) {
+                        context
+                            .read<DictationBloc>()
+                            .add(StartDictation(localeId: value));
+                      }
+                    });
+                  }
                 }
               },
             ),
@@ -781,7 +792,7 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: _buildModeSelector()),
+                Expanded(child: _buildModeSelector(state)),
               ],
             ),
             const SizedBox(height: 16),
